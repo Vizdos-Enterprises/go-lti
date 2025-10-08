@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kvizdos/lti-server/internal/adapters/keyfunc"
-	"github.com/kvizdos/lti-server/internal/adapters/redirector"
-	"github.com/kvizdos/lti-server/internal/adapters/registry"
-	"github.com/kvizdos/lti-server/lti/lti_logger"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/keyfunc"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/redirector"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/registry"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_logger"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 type LauncherOptions func(*LTI13_Launcher)

@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	launcher1dot3 "github.com/kvizdos/lti-server/internal/adapters/launcher/lti1.3"
-	"github.com/kvizdos/lti-server/lti/lti_domain"
-	"github.com/kvizdos/lti-server/lti/lti_testadapters"
+	launcher1dot3 "github.com/vizdos-enterprises/go-lti/internal/adapters/launcher/lti1.3"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_testadapters"
 )
 
 // setupLauncher creates a configured launcher with all fake adapters.

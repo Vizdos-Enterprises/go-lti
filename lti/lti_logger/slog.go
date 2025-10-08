@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 type slogLogger struct {

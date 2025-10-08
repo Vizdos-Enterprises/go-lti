@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/kvizdos/lti-server/internal/adapters/server/middleware"
-	"github.com/kvizdos/lti-server/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/server/middleware"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 )
 
 // --- Fake verifier that can simulate good/bad responses ---

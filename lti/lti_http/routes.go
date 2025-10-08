@@ -1,9 +1,9 @@
 package lti_http
 
 import (
-	internal "github.com/kvizdos/lti-server/internal/adapters/server"
+	internal "github.com/vizdos-enterprises/go-lti/internal/adapters/server"
 
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 // HTTPRouteOption represents a route configuration option.

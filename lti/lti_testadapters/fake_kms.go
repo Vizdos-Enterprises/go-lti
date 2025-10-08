@@ -3,7 +3,7 @@ package lti_testadapters
 import (
 	"context"
 
-	"github.com/kvizdos/lti-server/internal/adapters/crypto"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/crypto"
 )
 
 type FakeKMSClient struct {

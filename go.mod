@@ -1,4 +1,4 @@
-module github.com/kvizdos/lti-server
+module github.com/vizdos-enterprises/go-lti
 
 go 1.25.0
 

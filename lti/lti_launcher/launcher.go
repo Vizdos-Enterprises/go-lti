@@ -1,8 +1,8 @@
 package lti_launcher
 
 import (
-	launcher1dot3 "github.com/kvizdos/lti-server/internal/adapters/launcher/lti1.3"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	launcher1dot3 "github.com/vizdos-enterprises/go-lti/internal/adapters/launcher/lti1.3"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 // Launcher represents any LTI-compliant launcher implementation.

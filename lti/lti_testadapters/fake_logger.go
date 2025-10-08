@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 var _ lti_ports.Logger = (*FakeLogger)(nil)

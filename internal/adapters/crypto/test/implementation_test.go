@@ -7,7 +7,7 @@ import (
 	"crypto/rsa"
 	"testing"
 
-	"github.com/kvizdos/lti-server/internal/adapters/crypto"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/crypto"
 )
 
 func TestCryptoImplementation(t *testing.T) {

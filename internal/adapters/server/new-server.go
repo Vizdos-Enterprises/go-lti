@@ -1,6 +1,6 @@
 package server
 
-import "github.com/kvizdos/lti-server/lti/lti_ports"
+import "github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 
 type ServerOption func(*Server)
 

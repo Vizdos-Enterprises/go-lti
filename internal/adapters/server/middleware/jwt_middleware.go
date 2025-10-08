@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/kvizdos/lti-server/lti/lti_domain"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, next http.Handler) http.Handler {

@@ -2,9 +2,9 @@ package lti_crypto
 
 import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
-	"github.com/kvizdos/lti-server/internal/adapters/crypto"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
 	"github.com/matelang/jwt-go-aws-kms/v2/jwtkms"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/crypto"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 // KMSOptions represents a configurable option for creating a new KMS.

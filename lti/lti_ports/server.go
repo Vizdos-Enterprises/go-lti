@@ -3,7 +3,7 @@ package lti_ports
 import (
 	"net/http"
 
-	"github.com/kvizdos/lti-server/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 )
 
 type HTTPRouteOptions func(mux *http.ServeMux)

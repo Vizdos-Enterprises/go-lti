@@ -3,7 +3,7 @@ package lti_ports
 import (
 	"context"
 
-	"github.com/kvizdos/lti-server/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 )
 
 type Registry interface {

@@ -3,7 +3,7 @@ package lti_http
 import (
 	"net/http"
 
-	internal "github.com/kvizdos/lti-server/internal/adapters/server"
+	internal "github.com/vizdos-enterprises/go-lti/internal/adapters/server"
 )
 
 // HTTPServer represents a running LTI HTTP server.

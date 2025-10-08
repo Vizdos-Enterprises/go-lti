@@ -1,8 +1,8 @@
 package lti_registry
 
 import (
-	"github.com/kvizdos/lti-server/internal/adapters/registry"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/registry"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 func NewMemoryRegistry() lti_ports.EphemeralRegistry {

@@ -4,8 +4,8 @@ import (
 	"crypto/ecdsa"
 	"crypto/rsa"
 
-	"github.com/kvizdos/lti-server/internal/adapters/crypto"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/crypto"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 func NewHMAC(keyID string, secret string, issuer string) lti_ports.SignerVerifier {

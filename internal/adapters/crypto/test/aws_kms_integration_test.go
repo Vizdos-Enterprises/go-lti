@@ -17,7 +17,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/kvizdos/lti-server/internal/adapters/crypto"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/crypto"
 )
 
 func TestKMSSigner_LocalStackIntegration(t *testing.T) {

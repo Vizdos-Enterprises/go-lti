@@ -10,13 +10,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/kvizdos/lti-server/lti/lti_crypto"
-	"github.com/kvizdos/lti-server/lti/lti_domain"
-	"github.com/kvizdos/lti-server/lti/lti_http"
-	"github.com/kvizdos/lti-server/lti/lti_launcher"
-	"github.com/kvizdos/lti-server/lti/lti_logger"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
-	"github.com/kvizdos/lti-server/lti/lti_registry"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_crypto"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_http"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_launcher"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_logger"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_registry"
 )
 
 func main() {

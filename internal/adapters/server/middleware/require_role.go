@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/kvizdos/lti-server/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 )
 
 func RequireRole(requiredRoles ...lti_domain.Role) func(next http.Handler) http.Handler {

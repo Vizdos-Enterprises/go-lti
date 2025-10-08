@@ -1,8 +1,8 @@
 package lti_http
 
 import (
-	internal "github.com/kvizdos/lti-server/internal/adapters/server"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	internal "github.com/vizdos-enterprises/go-lti/internal/adapters/server"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 // ServerOption represents a public configuration option for the LTI Server.

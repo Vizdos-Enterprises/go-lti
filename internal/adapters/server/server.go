@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kvizdos/lti-server/internal/adapters/server/middleware"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/server/middleware"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 type Server struct {

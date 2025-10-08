@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kvizdos/lti-server/lti/lti_domain"
-	"github.com/kvizdos/lti-server/lti/lti_ports"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 // Ensure it implements *both* interfaces
