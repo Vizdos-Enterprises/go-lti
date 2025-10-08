@@ -1,8 +1,6 @@
 package lti_http
 
 import (
-	"net/http"
-
 	internal "github.com/kvizdos/lti-server/internal/adapters/server"
 
 	"github.com/kvizdos/lti-server/lti/lti_ports"
@@ -14,8 +12,8 @@ type HTTPRouteOption struct {
 }
 
 // WithProtectedRoutes registers LTI-protected routes (requires valid launch JWT).
-func WithProtectedRoutes(handler http.Handler, customVerifierFunc ...lti_ports.VerifyTokenFunc) HTTPRouteOption {
+func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) HTTPRouteOption {
 	return HTTPRouteOption{toInternal: func() internal.HTTPRouteOptions {
-		return internal.WithProtectedRoutes(handler, customVerifierFunc...)
+		return internal.WithProtectedRoutes(routes...)
 	}}
 }

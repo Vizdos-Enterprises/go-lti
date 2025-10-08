@@ -94,15 +94,29 @@ func TestCreateRoutes_WithProtectedRoutes_CustomVerifier(t *testing.T) {
 	customVerifier := func(_ lti_ports.Verifier, _ []string, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called = true
-			next.ServeHTTP(w, r)
+			// Inject a fake LTI session
+			fakeSession := &lti_domain.LTIJWT{
+				Roles: []lti_domain.Role{lti_domain.MEMBERSHIP_LEARNER},
+			}
+			ctx := lti_domain.ContextWithLTI(r.Context(), fakeSession)
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 
-	mux := s.CreateRoutes(server.WithProtectedRoutes(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
-	}), customVerifier))
+	})
 
-	req := httptest.NewRequest(http.MethodGet, "/lti/app/anything", nil)
+	mux := s.CreateRoutes(server.WithProtectedRoutes(
+		lti_ports.ProtectedRoute{
+			Path:     "/test",
+			Role:     nil, // no role restriction for this test
+			Handler:  handler,
+			Verifier: customVerifier,
+		},
+	))
+
+	req := httptest.NewRequest(http.MethodGet, "/lti/app/test", nil)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 

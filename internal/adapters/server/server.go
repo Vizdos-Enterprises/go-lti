@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/kvizdos/lti-server/internal/adapters/server/middleware"
 	"github.com/kvizdos/lti-server/lti/lti_ports"
@@ -48,14 +49,23 @@ func (s *Server) CreateRoutes(opts ...HTTPRouteOptions) *http.ServeMux {
 	return mux
 }
 
-func WithProtectedRoutes(handler http.Handler, customVerifierFunc ...lti_ports.VerifyTokenFunc) HTTPRouteOptions {
+func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) HTTPRouteOptions {
 	return func(s *Server, m *http.ServeMux) {
-		var vFunc lti_ports.VerifyTokenFunc
-		vFunc = middleware.VerifyLTI
-		if len(customVerifierFunc) > 0 && customVerifierFunc[0] != nil {
-			vFunc = customVerifierFunc[0]
+		for _, route := range routes {
+			var vFunc lti_ports.VerifyTokenFunc
+			vFunc = middleware.VerifyLTI
+			if route.Verifier != nil {
+				vFunc = route.Verifier
+			}
+
+			// First wrap the handler with RequireRole
+			roleChecked := middleware.RequireRole(route.Role...)(route.Handler)
+
+			// Then wrap the result with the verifier
+			protected := vFunc(s.verifier, s.launcher.GetAudience(), roleChecked)
+			path := fmt.Sprintf("/lti/app%s", route.Path)
+			strip := fmt.Sprintf("/lti/app%s", strings.TrimRight(route.Path, "/"))
+			m.Handle(path, http.StripPrefix(strip, protected))
 		}
-		protected := vFunc(s.verifier, s.launcher.GetAudience(), handler)
-		m.Handle("/lti/app/", http.StripPrefix("/lti/app", protected))
 	}
 }
