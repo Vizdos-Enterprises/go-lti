@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/kvizdos/lti-server/internal/adapters/crypto"
+	"github.com/kvizdos/lti-server/lti/lti_crypto"
 	"github.com/kvizdos/lti-server/lti/lti_domain"
 	"github.com/kvizdos/lti-server/lti/lti_http"
 	"github.com/kvizdos/lti-server/lti/lti_launcher"
@@ -100,10 +100,10 @@ func main() {
 	}
 
 	// Init signer
-	signer, err := crypto.NewKMS(
-		crypto.WithKMS(client, *createOut.KeyMetadata.KeyId, false),
-		crypto.WithSigningMethod(jwtkms.SigningMethodECDSA256),
-		crypto.WithIssuer("https://dev.kv.codes/"),
+	signer, err := lti_crypto.NewKMS(
+		lti_crypto.WithKMS(client, *createOut.KeyMetadata.KeyId, false),
+		lti_crypto.WithSigningMethod(jwtkms.SigningMethodECDSA256),
+		lti_crypto.WithIssuer("https://dev.kv.codes/"),
 	)
 	if err != nil {
 		fmt.Printf("NewKMS failed: %v\n", err)
