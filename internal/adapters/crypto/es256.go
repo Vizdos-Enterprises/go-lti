@@ -25,7 +25,7 @@ type ES256Signer struct {
 }
 
 // NewES256 creates a new ES256 signer/verifier using an ECDSA keypair.
-func NewES256(keyID string, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey, issuer string) lti_ports.SignerVerifier {
+func NewES256(keyID string, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey, issuer string) lti_ports.AsymetricSignerVerifier {
 	return &ES256Signer{
 		privateKey: priv,
 		publicKey:  pub,

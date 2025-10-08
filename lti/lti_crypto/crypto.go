@@ -1,6 +1,7 @@
 package lti_crypto
 
 import (
+	"crypto/ecdsa"
 	"crypto/rsa"
 
 	"github.com/kvizdos/lti-server/internal/adapters/crypto"
@@ -11,6 +12,10 @@ func NewHMAC(keyID string, secret string, issuer string) lti_ports.SignerVerifie
 	return crypto.NewHMAC(keyID, secret, issuer)
 }
 
-func NewRS256(keyID string, priv *rsa.PrivateKey, pub *rsa.PublicKey, issuer string) lti_ports.SignerVerifier {
+func NewRS256(keyID string, priv *rsa.PrivateKey, pub *rsa.PublicKey, issuer string) lti_ports.AsymetricSignerVerifier {
 	return crypto.NewRS256(keyID, priv, pub, issuer)
+}
+
+func NewES256(keyID string, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey, issuer string) lti_ports.AsymetricSignerVerifier {
+	return crypto.NewES256(keyID, priv, pub, issuer)
 }

@@ -31,7 +31,7 @@ func WithLauncher(l lti_ports.Launcher) ServerOption {
 	}
 }
 
-func WithVerifier(ver lti_ports.Verifier) ServerOption {
+func WithVerifier(ver lti_ports.AsymetricVerifier) ServerOption {
 	return func(s *Server) {
 		s.verifier = ver
 	}

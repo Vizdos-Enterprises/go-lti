@@ -111,6 +111,15 @@ func WithIssuer(issuer string) KMSOption {
 
 // --- Core methods ---
 
+func (k *KMSSigner) getKID() string {
+	kid := k.kmsKeyId
+	if strings.HasPrefix(kid, "arn:aws:kms:") {
+		parts := strings.Split(kid, "/")
+		kid = parts[len(parts)-1]
+	}
+	return kid
+}
+
 func (k *KMSSigner) JWKs(ctx context.Context) (*lti_domain.JWKS, error) {
 	pubOut, err := k.kmsClient.GetPublicKey(ctx, &kms.GetPublicKeyInput{
 		KeyId: &k.kmsKeyId,
@@ -124,11 +133,7 @@ func (k *KMSSigner) JWKs(ctx context.Context) (*lti_domain.JWKS, error) {
 		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 
-	kid := *pubOut.KeyId
-	if strings.HasPrefix(kid, "arn:aws:kms:") {
-		parts := strings.Split(kid, "/")
-		kid = parts[len(parts)-1]
-	}
+	kid := k.getKID()
 
 	jwk := lti_domain.JWK{
 		Use: "sig",
@@ -190,6 +195,8 @@ func (k *KMSSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(k.signingMethod, claims)
+
+	token.Header["kid"] = k.getKID()
 
 	signed, err := token.SignedString(k.kmsConfig.WithContext(context.Background()))
 	if err != nil {

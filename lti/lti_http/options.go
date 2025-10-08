@@ -18,7 +18,7 @@ func WithLauncher(l lti_ports.Launcher) ServerOption {
 }
 
 // WithVerifier sets the token verifier implementation.
-func WithVerifier(v lti_ports.Verifier) ServerOption {
+func WithVerifier(v lti_ports.AsymetricVerifier) ServerOption {
 	return ServerOption{toInternal: func() internal.ServerOption {
 		return internal.WithVerifier(v)
 	}}

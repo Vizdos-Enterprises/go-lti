@@ -1,12 +1,14 @@
 package server_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/kvizdos/lti-server/internal/adapters/server"
+	"github.com/kvizdos/lti-server/lti/lti_domain"
 	"github.com/kvizdos/lti-server/lti/lti_ports"
 )
 
@@ -40,6 +42,10 @@ func (f *fakeVerifier) Verify(tokenString string, claims jwt.Claims) (*jwt.Token
 		Valid:  true,
 		Method: jwt.SigningMethodHS256,
 	}, nil
+}
+
+func (f *fakeVerifier) JWKs(_ context.Context) (*lti_domain.JWKS, error) {
+	return nil, nil
 }
 
 // --- Tests --------------------------------------------------------------

@@ -2,21 +2,26 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/kms"
+	"github.com/aws/aws-sdk-go-v2/service/kms/types"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
-	"github.com/kvizdos/lti-server/lti/lti_crypto"
+	"github.com/kvizdos/lti-server/internal/adapters/crypto"
 	"github.com/kvizdos/lti-server/lti/lti_domain"
 	"github.com/kvizdos/lti-server/lti/lti_http"
 	"github.com/kvizdos/lti-server/lti/lti_launcher"
 	"github.com/kvizdos/lti-server/lti/lti_logger"
 	"github.com/kvizdos/lti-server/lti/lti_registry"
+	"github.com/matelang/jwt-go-aws-kms/v2/jwtkms"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func main() {
@@ -40,21 +45,82 @@ func main() {
 		DeploymentID:  os.Getenv("LTI_DEPLOYMENT_ID"),
 	})
 
-	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
+	ctx := context.Background()
 
-	signVerifier := lti_crypto.NewRS256("kid-demo", priv, &priv.PublicKey, "https://dev.kv.codes/lti/")
+	req := testcontainers.ContainerRequest{
+		Image:        "localstack/localstack:latest",
+		ExposedPorts: []string{"4566/tcp"},
+		Env: map[string]string{
+			"SERVICES": "kms",
+			"DEBUG":    "1",
+		},
+		WaitingFor: wait.ForListeningPort("4566/tcp"),
+	}
+	localstackC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		fmt.Println("failed to start localstack: %v", err)
+	}
+	defer localstackC.Terminate(ctx)
+
+	host, err := localstackC.Host(ctx)
+	if err != nil {
+		fmt.Println("failed to get host: %v", err)
+	}
+
+	mapped, err := localstackC.MappedPort(ctx, "4566/tcp")
+	if err != nil {
+		fmt.Println("failed to get mapped port: %v", err)
+	}
+	endpoint := fmt.Sprintf("http://%s:%s", host, mapped.Port())
+
+	os.Setenv("AWS_ACCESS_KEY_ID", "test")
+	os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
+	os.Setenv("AWS_REGION", "us-east-1")
+
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
+	if err != nil {
+		fmt.Println("failed to load AWS config: %v", err)
+	}
+
+	client := kms.NewFromConfig(cfg, func(o *kms.Options) {
+		o.BaseEndpoint = aws.String(endpoint)
+	})
+
+	// Create KMS key
+	createOut, err := client.CreateKey(ctx, &kms.CreateKeyInput{
+		Description: aws.String("test key"),
+		KeyUsage:    types.KeyUsageTypeSignVerify,
+		KeySpec:     types.KeySpecEccNistP256,
+	})
+	if err != nil {
+		fmt.Println("failed to create key: %v", err)
+	}
+
+	// Init signer
+	signer, err := crypto.NewKMS(
+		crypto.WithKMS(client, *createOut.KeyMetadata.KeyId, false),
+		crypto.WithSigningMethod(jwtkms.SigningMethodECDSA256),
+		crypto.WithIssuer("https://dev.kv.codes/"),
+	)
+	if err != nil {
+		fmt.Println("NewKMS failed: %v", err)
+	}
+
 	launcher := lti_launcher.NewLTI13Launcher(
 		lti_launcher.WithBaseURL(os.Getenv("BASE_URL")),
 		lti_launcher.WithRedirectURL("/lti/app"),
 		lti_launcher.WithLogger(logger),
 		lti_launcher.WithRegistry(registry),
 		lti_launcher.WithEphemeralStorage(registry),
-		lti_launcher.WithSigner(signVerifier),
+		lti_launcher.WithSigner(signer),
 		lti_launcher.WithAudience([]string{"made with ❤️ by kenton"}),
 	)
 	ltiInstance := lti_http.NewServer(
 		lti_http.WithLauncher(launcher),
-		lti_http.WithVerifier(signVerifier),
+		lti_http.WithVerifier(signer),
 	)
 
 	demoRoutes := http.NewServeMux()

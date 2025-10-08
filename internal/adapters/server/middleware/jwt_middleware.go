@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
 
@@ -20,6 +21,7 @@ func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, next http
 		claims := &lti_domain.LTIJWT{}
 		token, err := verifier.Verify(cookie.Value, claims)
 		if err != nil || !token.Valid {
+			fmt.Println("VerifyLTI failed: %v", err)
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
 		}

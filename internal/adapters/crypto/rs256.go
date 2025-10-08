@@ -27,7 +27,7 @@ type RS256Signer struct {
 }
 
 // NewRS256 creates a new RSA signer/verifier pair.
-func NewRS256(keyID string, priv *rsa.PrivateKey, pub *rsa.PublicKey, issuer string) lti_ports.SignerVerifier {
+func NewRS256(keyID string, priv *rsa.PrivateKey, pub *rsa.PublicKey, issuer string) lti_ports.AsymetricSignerVerifier {
 	return &RS256Signer{
 		privateKey: priv,
 		publicKey:  pub,
