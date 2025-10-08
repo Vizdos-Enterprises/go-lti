@@ -1,6 +1,6 @@
 module github.com/kvizdos/lti-server
 
-go 1.24.3
+go 1.25.0
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.6.2
@@ -10,6 +10,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
+	github.com/matelang/jwt-go-aws-kms/v2 v2.0.0-20251003083445-996321e729eb
 	github.com/testcontainers/testcontainers-go v0.39.0
 )
 
@@ -49,7 +50,6 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.10 // indirect
-	github.com/matelang/jwt-go-aws-kms/v2 v2.0.0-20251003083445-996321e729eb // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/go-archive v0.1.0 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect

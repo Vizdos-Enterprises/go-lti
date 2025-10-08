@@ -1,8 +1,8 @@
-# LTI Server Framework
+# go-lti Framework
 
 A lightweight, hexagonal Go framework for building LTI 1.3-compliant servers that can integrate with any LMS (e.g., Agilix Buzz, Canvas, Schoology).
 
-It’s designed to be modular, multi-tenant supported, and easy to embed inside other Go services.
+It's designed to be modular, multi-tenant supported, and easy to embed inside other Go services. From concept LTI integration to LTI app within minutes.
 
 ## Architecture
 
@@ -73,10 +73,10 @@ http.ListenAndServe(":8888", server.CreateRoutes(
 
 ## Roadmap
 
-- [ ] NRPS (Names and Role Provisioning Services)
+- [x] JWKS Endpoint
+- [x] Role-based Authorization
+- [x] AWS KMS JWT Provider
 - [ ] AGS (Assignment & Grade Service)
-- [ ] JWKS Endpoint
-- [ ] Pluggable Storage Providers - base adapters for: MongoDB (persistent registry), PostgreSQL (persistent registry), Redis (ephemeral state), AWS KMS (crypto), AWS CloudWatch (metrics)
-
-- [ ] Telemtry & Metrics
-Structured tracing (OpenTelemetry) and metrics for launch latency, success rate, and platform distribution.
+- [ ] Pluggable Storage Providers - base adapters for: MongoDB (persistent registry), PostgreSQL (persistent registry), Redis (ephemeral state), AWS CloudWatch (metrics)
+- [ ] NRPS (Names and Role Provisioning Services)
+- [ ] Telemtry & Metrics - Structured tracing (OpenTelemetry) and metrics for launch latency, success rate, and platform distribution.
