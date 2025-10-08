@@ -61,18 +61,18 @@ func main() {
 		Started:          true,
 	})
 	if err != nil {
-		fmt.Println("failed to start localstack: %v", err)
+		fmt.Printf("failed to start localstack: %v\n", err)
 	}
 	defer localstackC.Terminate(ctx)
 
 	host, err := localstackC.Host(ctx)
 	if err != nil {
-		fmt.Println("failed to get host: %v", err)
+		fmt.Printf("failed to get host: %v\n", err)
 	}
 
 	mapped, err := localstackC.MappedPort(ctx, "4566/tcp")
 	if err != nil {
-		fmt.Println("failed to get mapped port: %v", err)
+		fmt.Printf("failed to get mapped port: %v\n", err)
 	}
 	endpoint := fmt.Sprintf("http://%s:%s", host, mapped.Port())
 
@@ -82,7 +82,7 @@ func main() {
 
 	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion("us-east-1"))
 	if err != nil {
-		fmt.Println("failed to load AWS config: %v", err)
+		fmt.Printf("failed to load AWS config: %v\n", err)
 	}
 
 	client := kms.NewFromConfig(cfg, func(o *kms.Options) {
@@ -96,7 +96,7 @@ func main() {
 		KeySpec:     types.KeySpecEccNistP256,
 	})
 	if err != nil {
-		fmt.Println("failed to create key: %v", err)
+		fmt.Printf("failed to create key: %v\n", err)
 	}
 
 	// Init signer
@@ -106,7 +106,7 @@ func main() {
 		crypto.WithIssuer("https://dev.kv.codes/"),
 	)
 	if err != nil {
-		fmt.Println("NewKMS failed: %v", err)
+		fmt.Printf("NewKMS failed: %v\n", err)
 	}
 
 	launcher := lti_launcher.NewLTI13Launcher(
