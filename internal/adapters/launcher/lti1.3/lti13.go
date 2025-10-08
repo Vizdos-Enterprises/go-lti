@@ -187,6 +187,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if claims["nonce"] != stateData.Nonce {
+		l.logger.Error("Invalid nonce used")
 		http.Error(w, "invalid nonce", http.StatusUnauthorized)
 		return
 	}

@@ -94,7 +94,7 @@ func TestHandleOIDC_InvalidIssuer(t *testing.T) {
 }
 
 func TestHandleLaunch_Success(t *testing.T) {
-	l, reg, redir, signer, _ := setupLauncher()
+	l, reg, redir, signer, logger := setupLauncher()
 
 	// Pre-store valid state
 	stateID := reg.AddStateQuick("", lti_domain.State{
@@ -110,6 +110,7 @@ func TestHandleLaunch_Success(t *testing.T) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub":   "user123",
 		"nonce": "nonce-123",
+		"https://purl.imsglobal.org/spec/lti/claim/message_type": "LtiResourceLinkRequest",
 		"https://purl.imsglobal.org/spec/lti/claim/context": map[string]any{
 			"id": "course1", "label": "C101", "title": "Intro to Testing",
 		},
@@ -126,6 +127,7 @@ func TestHandleLaunch_Success(t *testing.T) {
 	resp := w.Result()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusFound {
+		t.Logf("%+v\n", logger.Entries())
 		t.Fatalf("expected redirect or 200 OK, got %d", resp.StatusCode)
 	}
 	if !redir.DidRedirect() {
