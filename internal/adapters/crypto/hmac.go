@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -61,8 +61,8 @@ func (s *HMACSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) 
 // You must pass an empty claims struct (e.g., &domain.LTIJWT{}).
 func (s *HMACSigner) Verify(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
+		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %s", t.Method.Alg())
 		}
 		return s.key, nil
 	})

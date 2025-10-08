@@ -1,17 +1,21 @@
 package crypto
 
 import (
+	"context"
 	"crypto/rsa"
-	"errors"
+	"encoding/base64"
+	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kvizdos/lti-server/lti/lti_domain"
 	"github.com/kvizdos/lti-server/lti/lti_ports"
 )
 
 var (
-	_ lti_ports.SignerVerifier           = (*RS256Signer)(nil)
-	_ lti_ports.AssymetricSignerVerifier = (*RS256Signer)(nil)
+	_ lti_ports.SignerVerifier          = (*RS256Signer)(nil)
+	_ lti_ports.AsymetricSignerVerifier = (*RS256Signer)(nil)
 )
 
 // RS256Signer implements lti_ports.SignerVerifier using RSA (RS256).
@@ -32,7 +36,27 @@ func NewRS256(keyID string, priv *rsa.PrivateKey, pub *rsa.PublicKey, issuer str
 	}
 }
 
-func (s *RS256Signer) Asymetric() {}
+func (s *RS256Signer) JWKs(ctx context.Context) (*lti_domain.JWKS, error) {
+	pub := s.publicKey
+	if pub == nil {
+		return nil, fmt.Errorf("public key is nil")
+	}
+
+	// Encode modulus (N) and exponent (E) in base64url without padding.
+	nBytes := pub.N.Bytes()
+	eBytes := big.NewInt(int64(pub.E)).Bytes()
+
+	jwk := lti_domain.JWK{
+		Kty: "RSA",
+		Use: "sig",
+		Alg: "RS256",
+		Kid: s.keyID,
+		N:   base64.RawURLEncoding.EncodeToString(nBytes),
+		E:   base64.RawURLEncoding.EncodeToString(eBytes),
+	}
+
+	return &lti_domain.JWKS{Keys: []lti_domain.JWK{jwk}}, nil
+}
 
 func (s *RS256Signer) GetIssuer() string {
 	return s.issuer
@@ -65,8 +89,8 @@ func (s *RS256Signer) Sign(claims jwt.Claims, ttl time.Duration) (string, error)
 // Verify parses and validates an RS256 token using the public key.
 func (s *RS256Signer) Verify(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
-			return nil, errors.New("unexpected signing method")
+		if t.Method.Alg() != jwt.SigningMethodRS256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %s", t.Method.Alg())
 		}
 		return s.publicKey, nil
 	})

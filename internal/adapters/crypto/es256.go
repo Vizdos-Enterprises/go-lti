@@ -1,11 +1,14 @@
 package crypto
 
 import (
+	"context"
 	"crypto/ecdsa"
-	"errors"
+	"encoding/base64"
+	"fmt"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kvizdos/lti-server/lti/lti_domain"
 	"github.com/kvizdos/lti-server/lti/lti_ports"
 )
 
@@ -31,7 +34,28 @@ func NewES256(keyID string, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey, issuer
 	}
 }
 
-func (s ES256Signer) Asymetric() {}
+func (k *ES256Signer) JWKs(ctx context.Context) (*lti_domain.JWKS, error) {
+	pub := k.publicKey
+	if pub == nil {
+		return nil, fmt.Errorf("public key is nil")
+	}
+
+	// Convert big.Int coordinates to 32-byte base64url strings (no padding).
+	xBytes := pub.X.FillBytes(make([]byte, 32))
+	yBytes := pub.Y.FillBytes(make([]byte, 32))
+
+	jwk := lti_domain.JWK{
+		Kty: "EC",
+		Crv: "P-256",
+		Use: "sig",
+		Alg: "ES256",
+		Kid: k.keyID,
+		X:   base64.RawURLEncoding.EncodeToString(xBytes),
+		Y:   base64.RawURLEncoding.EncodeToString(yBytes),
+	}
+
+	return &lti_domain.JWKS{Keys: []lti_domain.JWK{jwk}}, nil
+}
 
 func (s *ES256Signer) GetIssuer() string {
 	return s.issuer
@@ -62,8 +86,8 @@ func (s *ES256Signer) Sign(claims jwt.Claims, ttl time.Duration) (string, error)
 // Verify parses and validates an ES256 token using the provided public key.
 func (s *ES256Signer) Verify(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodECDSA); !ok {
-			return nil, errors.New("unexpected signing method")
+		if t.Method.Alg() != jwt.SigningMethodES256.Alg() {
+			return nil, fmt.Errorf("unexpected signing method: %s", t.Method.Alg())
 		}
 		return s.publicKey, nil
 	})

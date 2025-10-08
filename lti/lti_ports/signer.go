@@ -1,9 +1,11 @@
 package lti_ports
 
 import (
+	"context"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/kvizdos/lti-server/lti/lti_domain"
 )
 
 // Signer defines an interface for generating and verifying internal JWTs.
@@ -17,7 +19,7 @@ type Signer interface {
 
 type AsymetricSigner interface {
 	Signer
-	Asymetric()
+	JWKs(context.Context) (*lti_domain.JWKS, error)
 }
 
 type Verifier interface {
@@ -25,9 +27,9 @@ type Verifier interface {
 	Verify(tokenString string, claims jwt.Claims) (*jwt.Token, error)
 }
 
-type AssymetricVerifier interface {
+type AsymetricVerifier interface {
 	Verifier
-	Asymetric()
+	JWKs(context.Context) (*lti_domain.JWKS, error)
 }
 
 type SignerVerifier interface {
@@ -35,7 +37,7 @@ type SignerVerifier interface {
 	Verifier
 }
 
-type AssymetricSignerVerifier interface {
+type AsymetricSignerVerifier interface {
 	AsymetricSigner
-	AssymetricVerifier
+	AsymetricVerifier
 }
