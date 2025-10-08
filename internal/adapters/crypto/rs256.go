@@ -32,7 +32,7 @@ func NewRS256(keyID string, priv *rsa.PrivateKey, pub *rsa.PublicKey, issuer str
 	}
 }
 
-func (s *RS256Signer) Assymetric() {}
+func (s *RS256Signer) Asymetric() {}
 
 func (s *RS256Signer) GetIssuer() string {
 	return s.issuer

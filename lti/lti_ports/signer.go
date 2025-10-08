@@ -15,9 +15,9 @@ type Signer interface {
 	GetIssuer() string
 }
 
-type AssymetricSigner interface {
+type AsymetricSigner interface {
 	Signer
-	Assymetric()
+	Asymetric()
 }
 
 type Verifier interface {
@@ -27,7 +27,7 @@ type Verifier interface {
 
 type AssymetricVerifier interface {
 	Verifier
-	Assymetric()
+	Asymetric()
 }
 
 type SignerVerifier interface {
@@ -36,6 +36,6 @@ type SignerVerifier interface {
 }
 
 type AssymetricSignerVerifier interface {
-	AssymetricSigner
+	AsymetricSigner
 	AssymetricVerifier
 }
