@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"slices"
 
@@ -44,6 +45,7 @@ func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, next http
 
 		// Attach to context
 		ctx := lti_domain.ContextWithLTI(r.Context(), claims)
+		ctx = context.WithValue(ctx, "rawJWT", cookie.Value)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

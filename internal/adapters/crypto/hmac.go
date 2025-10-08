@@ -46,6 +46,9 @@ func (s *HMACSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) 
 		if rc.ExpiresAt == nil && ttl.Seconds() > 0 {
 			rc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(ttl))
 		}
+		if rc.NotBefore == nil {
+			rc.NotBefore = jwt.NewNumericDate(time.Now())
+		}
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

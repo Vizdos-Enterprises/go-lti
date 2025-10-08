@@ -191,6 +191,12 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	messageType, ok := claims["https://purl.imsglobal.org/spec/lti/claim/message_type"].(string)
+	if !ok || messageType != "LtiResourceLinkRequest" {
+		http.Error(w, "invalid message type", http.StatusUnauthorized)
+		return
+	}
+
 	// Extract relevant fields from the LTI claims
 	userID := fmt.Sprintf("%v", claims["sub"])
 
@@ -214,18 +220,38 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	name, _ := claims["name"].(string)
+	given_name, _ := claims["given_name"].(string)
+	family_name, _ := claims["family_name"].(string)
+	middle_name, _ := claims["middle_name"].(string)
+	picture, _ := claims["picture"].(string)
+	email, _ := claims["email"].(string)
+	locale, _ := claims["locale"].(string)
+
 	// Build your internal JWT payload
 	internalClaims := lti_domain.LTIJWT{
-		TenantID:    lti_domain.TenantIDString(stateData.TenantID),
-		Deployment:  dep.DeploymentID,
-		UserID:      userID,
-		CourseID:    courseID,
-		CourseLabel: courseLabel,
-		CourseTitle: courseTitle,
-		Roles:       roles,
+		TenantID:   lti_domain.TenantIDString(stateData.TenantID),
+		Deployment: dep.DeploymentID,
+		CourseInfo: lti_domain.LTIJWT_CourseInfo{
+			CourseID:    courseID,
+			CourseLabel: courseLabel,
+			CourseTitle: courseTitle,
+		},
+		UserInfo: lti_domain.LTIJWT_UserInfo{
+			UserID:     userID,
+			Name:       name,
+			GivenName:  given_name,
+			FamilyName: family_name,
+			MiddleName: middle_name,
+			Picture:    picture,
+			Email:      email,
+			Locale:     locale,
+		},
+		Roles: roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    l.signer.GetIssuer(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Second)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Audience:  l.audience,
 			ID:        jwtID,

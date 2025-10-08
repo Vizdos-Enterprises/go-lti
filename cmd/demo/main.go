@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -58,7 +57,6 @@ func main() {
 	)
 
 	demoRoutes := http.NewServeMux()
-
 	demoRoutes.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		session, ok := lti_domain.LTIFromContext(r.Context())
 		if !ok {
@@ -66,54 +64,77 @@ func main() {
 			return
 		}
 
+		rawToken := r.Context().Value("rawJWT")
+
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 
 		fmt.Fprintf(w, `
-			<!DOCTYPE html>
-			<html lang="en">
-			<head>
-				<meta charset="UTF-8" />
-				<title>LTI Session Details</title>
-				<style>
-					body { font-family: sans-serif; margin: 2rem; color: #333; }
-					h1 { color: #2b6cb0; }
-					table { border-collapse: collapse; width: 100%%; max-width: 600px; margin-top: 1rem; }
-					th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; }
-					th { width: 30%%; background: #f7fafc; }
-					code { background: #f1f1f1; padding: 2px 4px; border-radius: 4px; }
-				</style>
-			</head>
-			<body>
-				<h1>LTI Session Details</h1>
-				<table>
-					<tr><th>Tenant ID</th><td><code>%s</code></td></tr>
-					<tr><th>Deployment</th><td><code>%s</code></td></tr>
-					<tr><th>User ID</th><td><code>%s</code></td></tr>
-					<tr><th>User Roles</th><td><code>%v</code></td></tr>
-					<tr><th>Course ID</th><td><code>%s</code></td></tr>
-					<tr><th>Course Label</th><td><code>%s</code></td></tr>
-					<tr><th>Course Title</th><td><code>%s</code></td></tr>
-					<tr><th>Issued At</th><td><code>%s</code></td></tr>
-					<tr><th>Expires At</th><td><code>%s</code></td></tr>
-					<tr><th>Issuer</th><td><code>%s</code></td></tr>
-					<tr><th>Audience</th><td><code>%v</code></td></tr>
-					<tr><th>JWT ID</th><td><code>%s</code></td></tr>
-				</table>
-			</body>
-			</html>
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="UTF-8" />
+		<title>LTI JWT Details</title>
+		<style>
+			body { font-family: sans-serif; margin: 2rem; color: #333; }
+			h1 { color: #2b6cb0; }
+			table { border-collapse: collapse; width: 100%%; max-width: 800px; }
+			th, td { text-align: left; padding: 8px; border-bottom: 1px solid #ddd; vertical-align: top; }
+			th { width: 30%%; background: #f7fafc; }
+			code { background: #f1f1f1; padding: 2px 4px; border-radius: 4px; }
+		</style>
+		</head>
+		<body>
+		<h1>LTI JWT – Full Field Breakdown</h1>
+		<table>
+			<tr><th>Tenant ID</th><td><code>%s</code></td></tr>
+			<tr><th>Deployment ID</th><td><code>%s</code></td></tr>
+			<tr><th>User ID</th><td><code>%s</code></td></tr>
+			<tr><th>User Full Name</th><td><code>%s</code></td></tr>
+			<tr><th>Given Name</th><td><code>%s</code></td></tr>
+			<tr><th>Family Name</th><td><code>%s</code></td></tr>
+			<tr><th>Middle Name</th><td><code>%s</code></td></tr>
+			<tr><th>Profile Picture URL</th><td><code>%s</code></td></tr>
+			<tr><th>Email</th><td><code>%s</code></td></tr>
+			<tr><th>Locale</th><td><code>%s</code></td></tr>
+
+			<tr><th>Roles</th><td><code>%v</code></td></tr>
+
+			<tr><th>Course ID</th><td><code>%s</code></td></tr>
+			<tr><th>Course Label</th><td><code>%s</code></td></tr>
+			<tr><th>Course Title</th><td><code>%s</code></td></tr>
+
+			<tr><th>Issuer</th><td><code>%s</code></td></tr>
+			<tr><th>Audience</th><td><code>%v</code></td></tr>
+			<tr><th>JWT ID</th><td><code>%s</code></td></tr>
+			<tr><th>Issued At</th><td><code>%s</code></td></tr>
+			<tr><th>Expires At</th><td><code>%s</code></td></tr>
+			<tr><th>Not Before</th><td><code>%s</code></td></tr>
+			<tr><th>Raw Token</th><td><code>%s</code></td></tr>
+		</table>
+		</body>
+		</html>
 		`,
 			session.TenantID,
 			session.Deployment,
-			session.UserID,
+			session.UserInfo.UserID,
+			session.UserInfo.Name,
+			session.UserInfo.GivenName,
+			session.UserInfo.FamilyName,
+			session.UserInfo.MiddleName,
+			session.UserInfo.Picture,
+			session.UserInfo.Email,
+			session.UserInfo.Locale,
 			session.Roles,
-			session.CourseID,
-			session.CourseLabel,
-			session.CourseTitle,
-			session.IssuedAt.Time.Format(time.RFC1123),
-			session.ExpiresAt.Time.Format(time.RFC1123),
+			session.CourseInfo.CourseID,
+			session.CourseInfo.CourseLabel,
+			session.CourseInfo.CourseTitle,
 			session.Issuer,
 			session.Audience,
 			session.ID,
+			session.IssuedAt,
+			session.ExpiresAt,
+			session.NotBefore,
+			rawToken,
 		)
 	})
 
