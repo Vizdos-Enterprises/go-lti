@@ -200,10 +200,10 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	courseTitle := fmt.Sprintf("%v", ctxClaim["title"])
 
 	rolesRaw, _ := claims["https://purl.imsglobal.org/spec/lti/claim/roles"].([]any)
-	roles := make([]string, 0, len(rolesRaw))
+	roles := make([]lti_domain.Role, 0, len(rolesRaw))
 	for _, r := range rolesRaw {
 		if str, ok := r.(string); ok {
-			roles = append(roles, str)
+			roles = append(roles, lti_domain.ParseRoleURI(str))
 		}
 	}
 
