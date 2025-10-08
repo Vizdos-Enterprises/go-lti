@@ -9,8 +9,6 @@ import (
 )
 
 var (
-	_ lti_ports.Signer         = (*HMACSigner)(nil)
-	_ lti_ports.Verifier       = (*HMACSigner)(nil)
 	_ lti_ports.SignerVerifier = (*HMACSigner)(nil)
 )
 

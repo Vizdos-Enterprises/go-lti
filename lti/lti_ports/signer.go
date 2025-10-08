@@ -15,12 +15,27 @@ type Signer interface {
 	GetIssuer() string
 }
 
+type AssymetricSigner interface {
+	Signer
+	Assymetric()
+}
+
 type Verifier interface {
 	// Verify validates and parses a JWT, returning its claims.
 	Verify(tokenString string, claims jwt.Claims) (*jwt.Token, error)
 }
 
+type AssymetricVerifier interface {
+	Verifier
+	Assymetric()
+}
+
 type SignerVerifier interface {
 	Signer
 	Verifier
+}
+
+type AssymetricSignerVerifier interface {
+	AssymetricSigner
+	AssymetricVerifier
 }

@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"net/http"
 	"os"
@@ -38,7 +40,9 @@ func main() {
 		DeploymentID:  os.Getenv("LTI_DEPLOYMENT_ID"),
 	})
 
-	signVerifier := lti_crypto.NewHMAC("kid-demo", "a-string-secret-at-least-256-bits-long", "i-hope-you-have-a-great-day")
+	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
+
+	signVerifier := lti_crypto.NewRS256("kid-demo", priv, &priv.PublicKey, "issuer.rs256")
 	launcher := lti_launcher.NewLTI13Launcher(
 		lti_launcher.WithBaseURL(os.Getenv("BASE_URL")),
 		lti_launcher.WithRedirectURL("/lti/app"),
