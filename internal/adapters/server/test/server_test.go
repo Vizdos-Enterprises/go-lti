@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/server"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_http"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
@@ -107,7 +108,7 @@ func TestCreateRoutes_WithProtectedRoutes_CustomVerifier(t *testing.T) {
 		w.WriteHeader(http.StatusAccepted)
 	})
 
-	mux := s.CreateRoutes(server.WithProtectedRoutes(
+	mux := s.CreateRoutes(lti_http.WithProtectedRoutes(
 		lti_ports.ProtectedRoute{
 			Path:     "/test",
 			Role:     nil, // no role restriction for this test

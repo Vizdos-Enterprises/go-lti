@@ -16,9 +16,7 @@ type Server struct {
 	mux      http.ServeMux
 }
 
-type HTTPRouteOptions func(server *Server, mux *http.ServeMux)
-
-func (s *Server) CreateRoutes(opts ...HTTPRouteOptions) *http.ServeMux {
+func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.Handle("/lti/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -43,14 +41,22 @@ func (s *Server) CreateRoutes(opts ...HTTPRouteOptions) *http.ServeMux {
 	})
 
 	for _, opt := range opts {
-		opt(s, mux)
+		opt.ToInternal()(s, mux)
 	}
 
 	return mux
 }
 
-func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) HTTPRouteOptions {
-	return func(s *Server, m *http.ServeMux) {
+func (s *Server) GetVerifier() lti_ports.Verifier {
+	return s.verifier
+}
+
+func (s *Server) GetLauncher() lti_ports.Launcher {
+	return s.launcher
+}
+
+func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) lti_ports.HTTPRouteOptions {
+	return func(s lti_ports.Server, m *http.ServeMux) {
 		for _, route := range routes {
 			var vFunc lti_ports.VerifyTokenFunc
 			vFunc = middleware.VerifyLTI
@@ -62,7 +68,7 @@ func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) HTTPRouteOptions {
 			roleChecked := middleware.RequireRole(route.Role...)(route.Handler)
 
 			// Then wrap the result with the verifier
-			protected := vFunc(s.verifier, s.launcher.GetAudience(), roleChecked)
+			protected := vFunc(s.GetVerifier(), s.GetLauncher().GetAudience(), roleChecked)
 			path := fmt.Sprintf("/lti/app%s", route.Path)
 			strip := fmt.Sprintf("/lti/app%s", strings.TrimRight(route.Path, "/"))
 			m.Handle(path, http.StripPrefix(strip, protected))
