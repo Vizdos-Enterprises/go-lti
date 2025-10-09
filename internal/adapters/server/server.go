@@ -41,7 +41,7 @@ func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux 
 	})
 
 	for _, opt := range opts {
-		opt.ToInternal()(s, mux)
+		opt(s, mux)
 	}
 
 	return mux
@@ -55,7 +55,7 @@ func (s *Server) GetLauncher() lti_ports.Launcher {
 	return s.launcher
 }
 
-func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) lti_ports.HTTPRouteOptions {
+func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) lti_ports.HTTPRouteOption {
 	return func(s lti_ports.Server, m *http.ServeMux) {
 		for _, route := range routes {
 			var vFunc lti_ports.VerifyTokenFunc

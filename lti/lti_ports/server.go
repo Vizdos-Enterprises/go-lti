@@ -6,11 +6,7 @@ import (
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 )
 
-type HTTPRouteOptions func(server Server, mux *http.ServeMux)
-
-type HTTPRouteOption interface {
-	ToInternal() HTTPRouteOptions
-}
+type HTTPRouteOption func(server Server, mux *http.ServeMux)
 
 type Server interface {
 	CreateRoutes(opts ...HTTPRouteOption) *http.ServeMux
