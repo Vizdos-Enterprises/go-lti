@@ -2,6 +2,7 @@ package lti_launcher
 
 import (
 	launcher1dot3 "github.com/vizdos-enterprises/go-lti/internal/adapters/launcher/lti1.3"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
@@ -71,5 +72,12 @@ func WithSigner(signer lti_ports.Signer) LauncherOption {
 func WithAudience(audience []string) LauncherOption {
 	return LauncherOption{toInternal: func() launcher1dot3.LauncherOptions {
 		return launcher1dot3.WithAudience(audience)
+	}}
+}
+
+// WithImpostering sets whether impostering is enabled.
+func WithImpostering(imposteringJWT *lti_domain.LTIJWT) LauncherOption {
+	return LauncherOption{toInternal: func() launcher1dot3.LauncherOptions {
+		return launcher1dot3.WithImpostering(imposteringJWT)
 	}}
 }

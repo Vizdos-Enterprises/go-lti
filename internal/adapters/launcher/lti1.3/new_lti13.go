@@ -7,6 +7,7 @@ import (
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/keyfunc"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/redirector"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/registry"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_logger"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
@@ -103,5 +104,11 @@ func WithAudience(audience []string) LauncherOptions {
 func WithKeyFunc(keyfuncProvider lti_ports.KeyfuncProvider) LauncherOptions {
 	return func(s *LTI13_Launcher) {
 		s.keyfunc = keyfuncProvider
+	}
+}
+
+func WithImpostering(imposterJWT *lti_domain.LTIJWT) LauncherOptions {
+	return func(s *LTI13_Launcher) {
+		s.imposterJWT = imposterJWT
 	}
 }

@@ -24,6 +24,8 @@ type LTI13_Launcher struct {
 	signer     lti_ports.Signer
 	keyfunc    lti_ports.KeyfuncProvider
 
+	imposterJWT *lti_domain.LTIJWT
+
 	baseURL  string
 	audience []string
 }
@@ -133,7 +135,22 @@ func (l LTI13_Launcher) HandleOIDC(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
+func (l LTI13_Launcher) handleImpostering(w http.ResponseWriter, r *http.Request) {
+	l.logger.Warn("Impostering Started")
+	signed, err := l.signer.Sign(l.imposterJWT, time.Hour)
+	if err != nil {
+		l.logger.Error("failed to sign internal jwt", "error", err)
+		http.Error(w, "internal jwt creation failed", http.StatusInternalServerError)
+		return
+	}
+	l.redirector.RedirectAfterLaunch(w, r, signed)
+}
+
 func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
+	if l.imposterJWT != nil {
+		l.handleImpostering(w, r)
+		return
+	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", http.StatusBadRequest)
 		return
