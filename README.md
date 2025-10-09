@@ -4,6 +4,8 @@ A lightweight, hexagonal Go framework for building LTI 1.3-compliant servers tha
 
 It's designed to be modular, multi-tenant supported, and easy to embed inside other Go services. From concept LTI integration to LTI app within minutes.
 
+**AGS Coming Soon**
+
 ## Architecture
 
 - Hexagonal design — clean separation between domain, ports, and adapters.
@@ -77,6 +79,6 @@ http.ListenAndServe(":8888", server.CreateRoutes(
 - [x] Role-based Authorization
 - [x] AWS KMS JWT Provider
 - [ ] AGS (Assignment & Grade Service)
-- [ ] Pluggable Storage Providers - base adapters for: MongoDB (persistent registry), PostgreSQL (persistent registry), Redis (ephemeral state), AWS CloudWatch (metrics)
+- [ ] Pluggable Storage Providers - base adapters for: MongoDB (persistent registry), PostgreSQL (persistent registry), Redis (ephemeral state)
 - [ ] NRPS (Names and Role Provisioning Services)
 - [ ] Telemtry & Metrics - Structured tracing (OpenTelemetry) and metrics for launch latency, success rate, and platform distribution.
