@@ -7,6 +7,7 @@ import "github.com/golang-jwt/jwt/v5"
 type LTIJWT struct {
 	TenantID   string            `json:"t"`
 	Deployment string            `json:"d"`
+	ClientID   string            `json:"i"`
 	Roles      []Role            `json:"r"`
 	UserInfo   LTIJWT_UserInfo   `json:"u"`
 	CourseInfo LTIJWT_CourseInfo `json:"c"`

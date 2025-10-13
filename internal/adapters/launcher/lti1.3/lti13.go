@@ -250,6 +250,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	internalClaims := lti_domain.LTIJWT{
 		TenantID:   lti_domain.TenantIDString(stateData.TenantID),
 		Deployment: dep.DeploymentID,
+		ClientID:   dep.ClientID,
 		CourseInfo: lti_domain.LTIJWT_CourseInfo{
 			CourseID:    courseID,
 			CourseLabel: courseLabel,
