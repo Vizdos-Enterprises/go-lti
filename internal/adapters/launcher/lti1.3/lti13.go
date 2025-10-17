@@ -72,8 +72,8 @@ func (l LTI13_Launcher) HandleOIDC(w http.ResponseWriter, r *http.Request) {
 
 	iss := r.FormValue("iss")
 
-	if deployment.Issuer != iss {
-		l.logger.Error("Invalid issuer", "got", iss, "expected", deployment.Issuer)
+	if deployment.GetLTIIssuer() != iss {
+		l.logger.Error("Invalid issuer", "got", iss, "expected", deployment.GetLTIIssuer())
 		http.Error(w, "invalid issuer", http.StatusUnauthorized)
 		return
 	}
@@ -106,7 +106,7 @@ func (l LTI13_Launcher) HandleOIDC(w http.ResponseWriter, r *http.Request) {
 		ClientID:     clientID,
 		DeploymentID: deploymentID,
 		Nonce:        nonce,
-		TenantID:     deployment.ForTenantID,
+		TenantID:     deployment.GetTenantID(),
 		CreatedAt:    time.Now().UTC(),
 	}
 
@@ -130,7 +130,7 @@ func (l LTI13_Launcher) HandleOIDC(w http.ResponseWriter, r *http.Request) {
 	v.Set("state", state)
 	v.Set("nonce", nonce)
 
-	redirectURL := fmt.Sprintf("%s?%s", deployment.AuthEndpoint, v.Encode())
+	redirectURL := fmt.Sprintf("%s?%s", deployment.GetLTIAuthEndpoint(), v.Encode())
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
@@ -183,7 +183,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify the JWT
-	jwksURL := dep.JWKSURL
+	jwksURL := dep.GetLTIJWKSURL()
 	k, err := l.keyfunc(r.Context(), []string{jwksURL})
 	if err != nil {
 		l.logger.Error("Failed to load JWKS", "jwksURL", jwksURL, "error", err)
@@ -249,8 +249,8 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	// Build your internal JWT payload
 	internalClaims := lti_domain.LTIJWT{
 		TenantID:   lti_domain.TenantIDString(stateData.TenantID),
-		Deployment: dep.DeploymentID,
-		ClientID:   dep.ClientID,
+		Deployment: dep.GetDeploymentID(),
+		ClientID:   dep.GetLTIClientID(),
 		CourseInfo: lti_domain.LTIJWT_CourseInfo{
 			CourseID:    courseID,
 			CourseLabel: courseLabel,

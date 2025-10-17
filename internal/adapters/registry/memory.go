@@ -19,7 +19,7 @@ var (
 type inMemoryRegistry struct {
 	mu sync.RWMutex
 
-	deployments map[string]*lti_domain.Deployment // key: clientID|deploymentID
+	deployments map[string]lti_domain.Deployment // key: clientID|deploymentID
 	state       map[string]stateRecord
 }
 
@@ -31,7 +31,7 @@ type stateRecord struct {
 // NewInMemoryRegistry creates a new in-memory registry.
 func NewInMemoryRegistry() lti_ports.EphemeralRegistry {
 	return &inMemoryRegistry{
-		deployments: make(map[string]*lti_domain.Deployment),
+		deployments: make(map[string]lti_domain.Deployment),
 		state:       make(map[string]stateRecord),
 	}
 }
@@ -44,7 +44,7 @@ func makeDeploymentKey(clientID, deploymentID string) string {
 //  Registry interface
 // ====================
 
-func (r *inMemoryRegistry) GetDeployment(ctx context.Context, clientID, deploymentID string) (*lti_domain.Deployment, error) {
+func (r *inMemoryRegistry) GetDeployment(ctx context.Context, clientID, deploymentID string) (lti_domain.Deployment, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -100,9 +100,9 @@ func (r *inMemoryRegistry) GetState(ctx context.Context, stateID string) (*lti_d
 //  Helpers for seeding
 // ====================
 
-func (r *inMemoryRegistry) AddDeployment(ctx context.Context, dep *lti_domain.Deployment) {
+func (r *inMemoryRegistry) AddDeployment(ctx context.Context, dep lti_domain.Deployment) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	key := makeDeploymentKey(dep.ClientID, dep.DeploymentID)
+	key := makeDeploymentKey(dep.GetLTIClientID(), dep.GetLTIDeploymentID())
 	r.deployments[key] = dep
 }

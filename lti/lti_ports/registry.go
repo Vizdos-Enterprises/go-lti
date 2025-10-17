@@ -8,7 +8,7 @@ import (
 
 type Registry interface {
 	// Find a deployment
-	GetDeployment(ctx context.Context, clientID string, deploymentID string) (*lti_domain.Deployment, error)
+	GetDeployment(ctx context.Context, clientID string, deploymentID string) (lti_domain.Deployment, error)
 
-	AddDeployment(ctx context.Context, dep *lti_domain.Deployment)
+	AddDeployment(ctx context.Context, dep lti_domain.Deployment)
 }

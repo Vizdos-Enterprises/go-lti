@@ -28,9 +28,9 @@ func main() {
 
 	// Demo tenant ID-- tenants are managed outside of this sytem.
 
-	tenantID := lti_domain.TenantID(uuid.New())
-	registry.AddDeployment(context.Background(), &lti_domain.Deployment{
-		InternalID:    lti_domain.InternalDeploymentID(uuid.New()),
+	tenantID := uuid.NewString()
+	registry.AddDeployment(context.Background(), &lti_domain.BaseLTIDeployment{
+		InternalID:    uuid.NewString(),
 		ForTenantID:   tenantID,
 		Issuer:        os.Getenv("LTI_ISSUER"),
 		ClientID:      os.Getenv("LTI_CLIENT_ID"),

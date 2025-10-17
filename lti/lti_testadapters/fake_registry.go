@@ -21,17 +21,17 @@ type FakeRegistry struct {
 	Deployments sync.Map
 }
 
-func (f *FakeRegistry) GetDeployment(_ context.Context, clientID, depID string) (*lti_domain.Deployment, error) {
+func (f *FakeRegistry) GetDeployment(_ context.Context, clientID, depID string) (lti_domain.Deployment, error) {
 	v, ok := f.Deployments.Load(depID)
 	if !ok {
 		return nil, lti_domain.ErrDeploymentNotFound
 	}
 	dep := v.(lti_domain.Deployment)
-	return &dep, nil
+	return dep, nil
 }
 
-func (f *FakeRegistry) AddDeployment(ctx context.Context, dep *lti_domain.Deployment) {
-	f.Deployments.Store(dep.InternalID, dep)
+func (f *FakeRegistry) AddDeployment(ctx context.Context, dep lti_domain.Deployment) {
+	f.Deployments.Store(dep.GetDeploymentID(), dep)
 }
 
 func (f *FakeRegistry) SaveState(_ context.Context, key string, value lti_domain.State, _ time.Duration) error {
@@ -53,7 +53,7 @@ func (f *FakeRegistry) DeleteState(_ context.Context, key string) error {
 
 // Test Helpers
 func (f *FakeRegistry) AddDeploymentQuick(clientID, deploymentID, issuer, jwksURL, tenantID string) {
-	f.Deployments.Store(deploymentID, lti_domain.Deployment{
+	f.Deployments.Store(deploymentID, lti_domain.BaseLTIDeployment{
 		ClientID:      clientID,
 		DeploymentID:  deploymentID,
 		Issuer:        issuer,
