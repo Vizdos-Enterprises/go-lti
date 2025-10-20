@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_crypto"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_deeplink"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_http"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_launcher"
@@ -39,10 +40,15 @@ func main() {
 		TokenEndpoint: os.Getenv("LTI_TOKEN_ENDPOINT"),
 		DeploymentID:  os.Getenv("LTI_DEPLOYMENT_ID"),
 	})
-
 	priv, _ := rsa.GenerateKey(rand.Reader, 2048)
 
 	signVerifier := lti_crypto.NewRS256("kid-demo", priv, &priv.PublicKey, "https://dev.kv.codes/lti/")
+
+	deepLinking := lti_deeplink.NewDeepLinkingService(
+		lti_deeplink.WithSigner(signVerifier),
+		lti_deeplink.WithRedirectURL("/lti/app/deeplink"),
+	)
+
 	launcher := lti_launcher.NewLTI13Launcher(
 		lti_launcher.WithBaseURL(os.Getenv("BASE_URL")),
 		lti_launcher.WithRedirectURL("/lti/app"),
@@ -51,6 +57,7 @@ func main() {
 		lti_launcher.WithEphemeralStorage(registry),
 		lti_launcher.WithSigner(signVerifier),
 		lti_launcher.WithAudience([]string{"made with ❤️ by kenton"}),
+		lti_launcher.WithDeepLinking(deepLinking),
 	)
 	ltiInstance := lti_http.NewServer(
 		lti_http.WithLauncher(launcher),
@@ -70,6 +77,41 @@ func main() {
 
 	http.ListenAndServe(":8888", ltiInstance.CreateRoutes(
 		lti_http.WithProtectedRoutes(
+			lti_ports.ProtectedRoute{
+				Path: "/respond",
+				Role: []lti_domain.Role{lti_domain.MEMBERSHIP_CONTENT_DEV},
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					lti_deeplink.ReplyToDeeplink(w, r, signVerifier, []lti_domain.DeepLinkItem{
+						{
+							Type:  lti_domain.DeepLinkType_LtiResource,
+							Title: "Resource Demo",
+							URL:   "https://dev.kv.codes/lti/1.3/launch",
+							Custom: map[string]string{
+								"app_id": "here",
+							},
+							Targets: []lti_domain.DeepLinkingTarget{lti_domain.DeepLinkingTarget_Iframe},
+						},
+					})
+				}),
+			},
+			lti_ports.ProtectedRoute{
+				Path: "/deeplink",
+				Role: []lti_domain.Role{lti_domain.MEMBERSHIP_CONTENT_DEV},
+				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+					fmt.Fprintf(w, `
+						<!doctype html>
+						<html lang="en">
+						<head><meta charset="utf-8"><title>Return to LMS</title></head>
+						<body style="font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;">
+							<h2>Ready to return to your LMS</h2>
+							<a href="./respond">Select this item</a>
+						</body>
+						</html>
+					`)
+				}),
+			},
 			lti_ports.ProtectedRoute{
 				Path: "/",
 				Role: []lti_domain.Role{lti_domain.MEMBERSHIP_LEARNER},
@@ -125,6 +167,7 @@ func main() {
 					<tr><th>Issued At</th><td><code>%s</code></td></tr>
 					<tr><th>Expires At</th><td><code>%s</code></td></tr>
 					<tr><th>Not Before</th><td><code>%s</code></td></tr>
+					<tr><th>Custom Claims</th><td><code>%+v</code></td></tr>
 					<tr><th>Raw Token</th><td><code>%s</code></td></tr>
 				</table>
 				</body>
@@ -150,6 +193,7 @@ func main() {
 						session.IssuedAt,
 						session.ExpiresAt,
 						session.NotBefore,
+						session.Custom,
 						rawToken,
 					)
 				}),

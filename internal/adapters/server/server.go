@@ -44,6 +44,23 @@ func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux 
 		opt(s, mux)
 	}
 
+	if s.verifier != nil {
+		mux.HandleFunc("/lti/keys.json", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			keys, err := s.verifier.JWKs(r.Context())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			js, err := json.Marshal(keys)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Write(js)
+		})
+	}
+
 	return mux
 }
 

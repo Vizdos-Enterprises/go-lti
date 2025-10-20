@@ -3,6 +3,7 @@ package redirector
 import (
 	"net/http"
 
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
@@ -14,7 +15,7 @@ type defaultRedirector struct {
 
 func (rw *defaultRedirector) RedirectAfterLaunch(w http.ResponseWriter, r *http.Request, jwt string) {
 	cookie := &http.Cookie{
-		Name:     "lti_token",
+		Name:     lti_domain.ContextKey_Session,
 		Value:    jwt,
 		Path:     "/",
 		HttpOnly: true,

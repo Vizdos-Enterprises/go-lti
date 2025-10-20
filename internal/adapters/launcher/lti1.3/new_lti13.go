@@ -17,6 +17,9 @@ type LauncherOptions func(*LTI13_Launcher)
 func NewLauncher(opts ...LauncherOptions) *LTI13_Launcher {
 	l := &LTI13_Launcher{
 		redirector: redirector.NewDefaultRedirector(""),
+		enabledServices: []lti_domain.LTIService{
+			lti_domain.LTIService_ResourceLink,
+		},
 	}
 	for _, opt := range opts {
 		opt(l)
@@ -110,5 +113,12 @@ func WithKeyFunc(keyfuncProvider lti_ports.KeyfuncProvider) LauncherOptions {
 func WithImpostering(imposterJWT *lti_domain.LTIJWT) LauncherOptions {
 	return func(s *LTI13_Launcher) {
 		s.imposterJWT = imposterJWT
+	}
+}
+
+func WithDeepLinking(deepLinkingService lti_ports.DeepLinking) LauncherOptions {
+	return func(s *LTI13_Launcher) {
+		s.enabledServices = append(s.enabledServices, lti_domain.LTIService_DeepLink)
+		s.deepLinkingService = deepLinkingService
 	}
 }

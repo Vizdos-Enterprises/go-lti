@@ -1,21 +1,38 @@
 package middleware_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/server/middleware"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
 // --- Fake verifier that can simulate good/bad responses ---
+
+var _ lti_ports.AsymetricSignerVerifier = (*fakeVerifier)(nil)
 
 type fakeVerifier struct {
 	shouldError   bool
 	shouldBeValid bool
 	audience      []string
+}
+
+func (fakeVerifier) Sign(claims jwt.Claims, ttl time.Duration) (string, error) {
+	return "", nil
+}
+
+func (fakeVerifier) GetIssuer() string {
+	return "tool.example"
+}
+
+func (f *fakeVerifier) JWKs(_ context.Context) (*lti_domain.JWKS, error) {
+	return nil, nil
 }
 
 func (f *fakeVerifier) Verify(tokenString string, claims jwt.Claims) (*jwt.Token, error) {
@@ -75,7 +92,7 @@ func TestVerifyLTI_InvalidToken(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { nextCalled = true })
 
 	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
-	cookie := &http.Cookie{Name: "lti_token", Value: "fake.jwt"}
+	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "fake.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
 
@@ -93,7 +110,7 @@ func TestVerifyLTI_InvalidAudience(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { nextCalled = true })
 
 	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
-	cookie := &http.Cookie{Name: "lti_token", Value: "valid.jwt"}
+	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "valid.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
 
@@ -117,7 +134,7 @@ func TestVerifyLTI_Success(t *testing.T) {
 	})
 
 	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
-	cookie := &http.Cookie{Name: "lti_token", Value: "good.jwt"}
+	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "good.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
 
@@ -135,7 +152,7 @@ func TestVerifyLTI_TokenNotValid(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true })
 
 	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
-	cookie := &http.Cookie{Name: "lti_token", Value: "bad.jwt"}
+	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "bad.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
 

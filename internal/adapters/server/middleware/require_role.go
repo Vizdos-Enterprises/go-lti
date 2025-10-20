@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
 
@@ -28,6 +29,8 @@ func RequireRole(requiredRoles ...lti_domain.Role) func(next http.Handler) http.
 				}
 			}
 
+			fmt.Println(requiredRoles)
+			fmt.Println(session.Roles)
 			http.Error(w, "insufficient role", http.StatusForbidden)
 		})
 	}

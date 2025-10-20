@@ -81,3 +81,9 @@ func WithImpostering(imposteringJWT *lti_domain.LTIJWT) LauncherOption {
 		return launcher1dot3.WithImpostering(imposteringJWT)
 	}}
 }
+
+func WithDeepLinking(deepLinkingService lti_ports.DeepLinking) LauncherOption {
+	return LauncherOption{toInternal: func() launcher1dot3.LauncherOptions {
+		return launcher1dot3.WithDeepLinking(deepLinkingService)
+	}}
+}

@@ -18,8 +18,9 @@ type Server interface {
 type VerifyTokenFunc func(verifier Verifier, expectedAudience []string, next http.Handler) http.Handler
 
 type ProtectedRoute struct {
-	Path     string
-	Role     []lti_domain.Role
-	Handler  http.Handler
-	Verifier VerifyTokenFunc
+	Path                   string
+	Role                   []lti_domain.Role
+	RequireDeepLinkContext bool
+	Handler                http.Handler
+	Verifier               VerifyTokenFunc
 }

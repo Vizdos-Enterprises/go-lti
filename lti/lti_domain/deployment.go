@@ -40,7 +40,7 @@ type BaseLTIDeployment struct {
 }
 
 func (d *BaseLTIDeployment) GetDeploymentID() string {
-	return d.InternalID
+	return d.DeploymentID
 }
 
 func (d *BaseLTIDeployment) GetTenantID() TenantID {

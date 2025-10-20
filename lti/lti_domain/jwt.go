@@ -1,6 +1,8 @@
 package lti_domain
 
-import "github.com/golang-jwt/jwt/v5"
+import (
+	"github.com/golang-jwt/jwt/v5"
+)
 
 // LTIJWT represents your internal app-issued JWT after an LTI launch.
 // It captures key contextual info for downstream authorization and telemetry.
@@ -11,6 +13,8 @@ type LTIJWT struct {
 	Roles      []Role            `json:"r"`
 	UserInfo   LTIJWT_UserInfo   `json:"u"`
 	CourseInfo LTIJWT_CourseInfo `json:"c"`
+	LaunchType LTIService        `json:"s"`
+	Custom     map[string]any    `json:"cu"`
 	jwt.RegisteredClaims
 }
 
@@ -29,4 +33,33 @@ type LTIJWT_UserInfo struct {
 	Picture    string `json:"p,omitempty"`
 	Email      string `json:"e,omitempty"`
 	Locale     string `json:"l,omitempty"`
+}
+
+type DeepLinkingTarget string
+
+const (
+	DeepLinkingTarget_Iframe DeepLinkingTarget = "iframe"
+	DeepLinkingTarget_Window DeepLinkingTarget = "window"
+)
+
+type DeepLinkType string
+
+const (
+	DeepLinkType_File        DeepLinkType = "file"
+	DeepLinkType_HTML        DeepLinkType = "html"
+	DeepLinkType_LtiResource DeepLinkType = "ltiResourceLink"
+	DeepLinkType_Image       DeepLinkType = "image"
+)
+
+type DeepLinkContext struct {
+	jwt.RegisteredClaims
+	Nonce            string              `json:"n"`
+	ReturnAud        string              `json:"ra"`
+	ReturnURL        string              `json:"r"` // deep_link_return_url
+	Data             string              `json:"d"` // opaque state blob from LMS
+	AcceptTypes      []DeepLinkType      `json:"a"` // allowed content types (e.g. ltiResourceLink, html, file)
+	Targets          []DeepLinkingTarget `json:"t"` // allowed presentation targets (iframe, window)
+	AutoCreate       bool                `json:"c"` // whether LMS auto-adds items
+	AcceptMediaTypes string              `json:"m"`
+	AttachedKID      string              `json:"k"` // All must be attached to a valid Session JWT
 }

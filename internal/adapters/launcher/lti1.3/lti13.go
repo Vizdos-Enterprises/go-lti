@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -28,6 +29,10 @@ type LTI13_Launcher struct {
 
 	baseURL  string
 	audience []string
+
+	enabledServices []lti_domain.LTIService
+
+	deepLinkingService lti_ports.DeepLinking
 }
 
 func (l LTI13_Launcher) GetLTIVersion() string {
@@ -210,7 +215,10 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	messageType, ok := claims["https://purl.imsglobal.org/spec/lti/claim/message_type"].(string)
-	if !ok || messageType != "LtiResourceLinkRequest" {
+
+	requestType := lti_domain.LTIService(messageType)
+
+	if !ok || !slices.Contains(l.enabledServices, requestType) {
 		http.Error(w, "invalid message type", http.StatusUnauthorized)
 		return
 	}
@@ -231,6 +239,11 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	customClaims := map[string]any{}
+	if custom, ok := claims["https://purl.imsglobal.org/spec/lti/claim/custom"].(map[string]any); ok {
+		customClaims = custom
+	}
+
 	jwtID, err := l.randomness(16)
 	if err != nil {
 		l.logger.Error("failed to generate jwt id", "error", err)
@@ -246,11 +259,15 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	email, _ := claims["email"].(string)
 	locale, _ := claims["locale"].(string)
 
+	fmt.Println(claims)
+
 	// Build your internal JWT payload
 	internalClaims := lti_domain.LTIJWT{
+		LaunchType: requestType,
 		TenantID:   lti_domain.TenantIDString(stateData.TenantID),
 		Deployment: dep.GetDeploymentID(),
 		ClientID:   dep.GetLTIClientID(),
+		Custom:     customClaims,
 		CourseInfo: lti_domain.LTIJWT_CourseInfo{
 			CourseID:    courseID,
 			CourseLabel: courseLabel,
@@ -282,6 +299,11 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.logger.Error("failed to sign internal jwt", "error", err)
 		http.Error(w, "internal jwt creation failed", http.StatusInternalServerError)
+		return
+	}
+
+	if l.deepLinkingService != nil && l.deepLinkingService.IsDeepLinkLaunch(requestType) {
+		l.deepLinkingService.HandleLaunch(w, r, &internalClaims, signed, claims)
 		return
 	}
 
