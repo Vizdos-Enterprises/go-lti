@@ -27,6 +27,7 @@ type Deployment interface {
 }
 
 var _ Deployment = (*BaseLTIDeployment)(nil)
+var _ Deployment = BaseLTIDeployment{}
 
 type BaseLTIDeployment struct {
 	InternalID    string
@@ -39,34 +40,34 @@ type BaseLTIDeployment struct {
 	DeploymentID  string
 }
 
-func (d *BaseLTIDeployment) GetDeploymentID() string {
+func (d BaseLTIDeployment) GetDeploymentID() string {
 	return d.DeploymentID
 }
 
-func (d *BaseLTIDeployment) GetTenantID() TenantID {
+func (d BaseLTIDeployment) GetTenantID() TenantID {
 	return d.ForTenantID
 }
 
-func (d *BaseLTIDeployment) GetLTIIssuer() string {
+func (d BaseLTIDeployment) GetLTIIssuer() string {
 	return d.Issuer
 }
 
-func (d *BaseLTIDeployment) GetLTIClientID() string {
+func (d BaseLTIDeployment) GetLTIClientID() string {
 	return d.ClientID
 }
 
-func (d *BaseLTIDeployment) GetLTIJWKSURL() string {
+func (d BaseLTIDeployment) GetLTIJWKSURL() string {
 	return d.JWKSURL
 }
 
-func (d *BaseLTIDeployment) GetLTIAuthEndpoint() string {
+func (d BaseLTIDeployment) GetLTIAuthEndpoint() string {
 	return d.AuthEndpoint
 }
 
-func (d *BaseLTIDeployment) GetLTITokenEndpoint() string {
+func (d BaseLTIDeployment) GetLTITokenEndpoint() string {
 	return d.TokenEndpoint
 }
 
-func (d *BaseLTIDeployment) GetLTIDeploymentID() string {
+func (d BaseLTIDeployment) GetLTIDeploymentID() string {
 	return d.DeploymentID
 }
