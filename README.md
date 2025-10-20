@@ -78,6 +78,7 @@ http.ListenAndServe(":8888", server.CreateRoutes(
 - [x] JWKS Endpoint
 - [x] Role-based Authorization
 - [x] AWS KMS JWT Provider
+- [x] Deep Linking
 - [ ] AGS (Assignment & Grade Service)
 - [ ] Pluggable Storage Providers - base adapters for: MongoDB (persistent registry), PostgreSQL (persistent registry), Redis (ephemeral state)
 - [ ] NRPS (Names and Role Provisioning Services)
