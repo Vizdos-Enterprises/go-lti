@@ -251,6 +251,15 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resourceLinkID := ""
+	if v, ok := claims["https://purl.imsglobal.org/spec/lti/claim/resource_link_id"]; ok {
+		if mapped, ok := v.(map[string]any); ok {
+			if id, ok := mapped["id"].(string); ok {
+				resourceLinkID = id
+			}
+		}
+	}
+
 	name, _ := claims["name"].(string)
 	given_name, _ := claims["given_name"].(string)
 	family_name, _ := claims["family_name"].(string)
@@ -259,15 +268,44 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	email, _ := claims["email"].(string)
 	locale, _ := claims["locale"].(string)
 
-	fmt.Println(claims)
+	platformInfo := map[string]any{}
+	if v, ok := claims["https://purl.imsglobal.org/spec/lti/claim/tool_platform"].(map[string]any); ok {
+		platformInfo = v
+	}
+
+	platform := lti_domain.LTIJWT_ToolPlatform{
+		GUID:              "",
+		Name:              "",
+		ProductFamilyCode: "",
+		URL:               "",
+		Version:           "",
+	}
+
+	if v, ok := platformInfo["guid"].(string); ok {
+		platform.GUID = v
+	}
+	if v, ok := platformInfo["name"].(string); ok {
+		platform.Name = v
+	}
+	if v, ok := platformInfo["product_family_code"].(string); ok {
+		platform.ProductFamilyCode = v
+	}
+	if v, ok := platformInfo["url"].(string); ok {
+		platform.URL = v
+	}
+	if v, ok := platformInfo["version"].(string); ok {
+		platform.Version = v
+	}
 
 	// Build your internal JWT payload
 	internalClaims := lti_domain.LTIJWT{
-		LaunchType: requestType,
-		TenantID:   lti_domain.TenantIDString(stateData.TenantID),
-		Deployment: dep.GetDeploymentID(),
-		ClientID:   dep.GetLTIClientID(),
-		Custom:     customClaims,
+		LaunchType:       requestType,
+		TenantID:         lti_domain.TenantIDString(stateData.TenantID),
+		Deployment:       dep.GetDeploymentID(),
+		ClientID:         dep.GetLTIClientID(),
+		Custom:           customClaims,
+		LinkedResourceID: resourceLinkID,
+		Platform:         platform,
 		CourseInfo: lti_domain.LTIJWT_CourseInfo{
 			CourseID:    courseID,
 			CourseLabel: courseLabel,
