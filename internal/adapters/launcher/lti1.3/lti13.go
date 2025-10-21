@@ -252,7 +252,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resourceLinkID := ""
-	if v, ok := claims["https://purl.imsglobal.org/spec/lti/claim/resource_link_id"]; ok {
+	if v, ok := claims["https://purl.imsglobal.org/spec/lti/claim/resource_link"]; ok {
 		if mapped, ok := v.(map[string]any); ok {
 			if id, ok := mapped["id"].(string); ok {
 				resourceLinkID = id
