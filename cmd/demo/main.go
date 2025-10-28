@@ -7,13 +7,17 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_crypto"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_deeplink"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_http"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_impostering"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_launcher"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_logger"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
@@ -29,7 +33,7 @@ func main() {
 
 	// Demo tenant ID-- tenants are managed outside of this sytem.
 
-	tenantID := uuid.NewString()
+	tenantID := "2c24a2a0-5223-47b7-a572-392aac75993a"
 	registry.AddDeployment(context.Background(), &lti_domain.BaseLTIDeployment{
 		InternalID:    uuid.NewString(),
 		ForTenantID:   tenantID,
@@ -44,6 +48,7 @@ func main() {
 
 	signVerifier := lti_crypto.NewRS256("kid-demo", priv, &priv.PublicKey, "https://dev.kv.codes/lti/")
 
+	imposteringSvc := initImpostering(signVerifier)
 	deepLinking := lti_deeplink.NewDeepLinkingService(
 		lti_deeplink.WithSigner(signVerifier),
 		lti_deeplink.WithRedirectURL("/lti/app/deeplink"),
@@ -62,6 +67,7 @@ func main() {
 	ltiInstance := lti_http.NewServer(
 		lti_http.WithLauncher(launcher),
 		lti_http.WithVerifier(signVerifier),
+		lti_http.WithImpostering(imposteringSvc),
 	)
 
 	demoMux := http.NewServeMux()
@@ -113,8 +119,9 @@ func main() {
 				}),
 			},
 			lti_ports.ProtectedRoute{
-				Path: "/",
-				Role: []lti_domain.Role{lti_domain.MEMBERSHIP_LEARNER},
+				Path:             "/",
+				Role:             []lti_domain.Role{lti_domain.MEMBERSHIP_LEARNER},
+				AllowImpostering: true,
 				Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					session, ok := lti_domain.LTIFromContext(r.Context())
 					if !ok {
@@ -168,6 +175,8 @@ func main() {
 					<tr><th>Expires At</th><td><code>%s</code></td></tr>
 					<tr><th>Not Before</th><td><code>%s</code></td></tr>
 					<tr><th>Custom Claims</th><td><code>%+v</code></td></tr>
+					<tr><th>Impostering</th><td><code>%s</code></td></tr>
+					<tr><th>Impostering Source</th><td><code>%s</code></td></tr>
 					<tr><th>Raw Token</th><td><code>%s</code></td></tr>
 				</table>
 				</body>
@@ -194,6 +203,8 @@ func main() {
 						session.ExpiresAt,
 						session.NotBefore,
 						session.Custom,
+						strconv.FormatBool(session.Impostering),
+						session.ImposteringSrc,
 						rawToken,
 					)
 				}),
@@ -205,4 +216,62 @@ func main() {
 			},
 		),
 	))
+}
+
+func initImpostering(sessionSigner lti_ports.Signer) lti_ports.Impostering {
+	verifier := lti_crypto.NewHMAC("incoming", "your-very-secret-key", "demo")
+	imp := lti_impostering.NewImpostering(
+		lti_impostering.WithSessionSigner(sessionSigner),
+		lti_impostering.WithIncomingVerifier(verifier),
+		lti_impostering.WithIncomingAudience([]string{"lti-impostering"}),
+		lti_impostering.WithSessionAudience([]string{"made with ❤️ by kenton"}),
+		lti_impostering.WithLogger(lti_logger.NewSlogLogger()),
+	)
+
+	jwtID := uuid.NewString()
+	demoJWT := lti_domain.LTIJWT{
+		TenantID:   "2c24a2a0-5223-47b7-a572-392aac75993a",
+		Deployment: os.Getenv("LTI_DEPLOYMENT_ID"),
+		ClientID:   os.Getenv("LTI_CLIENT_ID"),
+		Roles: []lti_domain.Role{
+			lti_domain.MEMBERSHIP_LEARNER,
+		},
+		UserInfo: lti_domain.LTIJWT_UserInfo{
+			UserID:     "demo-user-id",
+			Name:       "Demo User",
+			GivenName:  "Demo",
+			FamilyName: "User",
+			MiddleName: "",
+			Picture:    "",
+			Email:      "demo@example.com",
+			Locale:     "en",
+		},
+		CourseInfo: lti_domain.LTIJWT_CourseInfo{
+			CourseID:    "demo-course-id",
+			CourseLabel: "Demo Course",
+			CourseTitle: "Demo Course Title",
+		},
+		LaunchType:             lti_domain.LTIService_ResourceLink,
+		Impostering:            true,
+		ImposteringSrc:         "demo-user:from-src-app",
+		ImposterLaunchRedirect: "/lti/app",
+		RegisteredClaims: jwt.RegisteredClaims{
+			Issuer:    verifier.GetIssuer(),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Second)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
+			Audience:  []string{"lti-impostering"},
+			ID:        jwtID,
+		},
+	}
+
+	signed, err := verifier.Sign(demoJWT, 10*time.Minute)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("Demo Impostering Token:\n/lti/imposter?token=%s\n", signed)
+
+	return imp
+
 }

@@ -17,7 +17,7 @@ func (rw *defaultRedirector) RedirectAfterLaunch(w http.ResponseWriter, r *http.
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
 		Value:    jwt,
-		Path:     "/",
+		Path:     "/lti/app/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,

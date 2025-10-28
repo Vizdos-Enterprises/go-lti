@@ -23,3 +23,10 @@ func WithVerifier(v lti_ports.AsymetricVerifier) ServerOption {
 		return internal.WithVerifier(v)
 	}}
 }
+
+// WithImpostering sets the impostering implementation.
+func WithImpostering(im lti_ports.Impostering) ServerOption {
+	return ServerOption{toInternal: func() internal.ServerOption {
+		return internal.WithImpostering(im)
+	}}
+}

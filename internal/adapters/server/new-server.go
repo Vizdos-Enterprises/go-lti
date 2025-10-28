@@ -36,3 +36,9 @@ func WithVerifier(ver lti_ports.AsymetricVerifier) ServerOption {
 		s.verifier = ver
 	}
 }
+
+func WithImpostering(im lti_ports.Impostering) ServerOption {
+	return func(s *Server) {
+		s.impostering = im
+	}
+}

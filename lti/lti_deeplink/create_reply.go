@@ -12,6 +12,10 @@ import (
 )
 
 func CreateReplyJWT(signer lti_ports.AsymetricSigner, ctx *lti_domain.DeepLinkContext, session *lti_domain.LTIJWT, items []lti_domain.DeepLinkItem) (string, error) {
+	if session.Impostering {
+		return "", fmt.Errorf("cannot create deeplink reply via imposter session")
+	}
+
 	now := time.Now().UTC()
 	claims := jwt.MapClaims{
 		"iss":   signer.GetIssuer(), // your tool’s registered issuer

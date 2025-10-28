@@ -74,7 +74,7 @@ func TestVerifyLTI_MissingCookie(t *testing.T) {
 	v := &fakeVerifier{}
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true })
-	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
+	mw := middleware.VerifyLTI(v, []string{"tool.example"}, true, next)
 
 	w := callMiddleware(t, mw)
 
@@ -91,7 +91,7 @@ func TestVerifyLTI_InvalidToken(t *testing.T) {
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { nextCalled = true })
 
-	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
+	mw := middleware.VerifyLTI(v, []string{"tool.example"}, true, next)
 	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "fake.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
@@ -109,7 +109,7 @@ func TestVerifyLTI_InvalidAudience(t *testing.T) {
 	nextCalled := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { nextCalled = true })
 
-	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
+	mw := middleware.VerifyLTI(v, []string{"tool.example"}, true, next)
 	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "valid.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
@@ -133,7 +133,7 @@ func TestVerifyLTI_Success(t *testing.T) {
 		}
 	})
 
-	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
+	mw := middleware.VerifyLTI(v, []string{"tool.example"}, true, next)
 	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "good.jwt"}
 
 	w := callMiddleware(t, mw, cookie)
@@ -151,7 +151,7 @@ func TestVerifyLTI_TokenNotValid(t *testing.T) {
 	called := false
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true })
 
-	mw := middleware.VerifyLTI(v, []string{"tool.example"}, next)
+	mw := middleware.VerifyLTI(v, []string{"tool.example"}, true, next)
 	cookie := &http.Cookie{Name: lti_domain.ContextKey_Session, Value: "bad.jwt"}
 
 	w := callMiddleware(t, mw, cookie)

@@ -15,7 +15,7 @@ type Server interface {
 	GetVerifier() Verifier
 }
 
-type VerifyTokenFunc func(verifier Verifier, expectedAudience []string, next http.Handler) http.Handler
+type VerifyTokenFunc func(verifier Verifier, expectedAudience []string, allowImpostering bool, next http.Handler) http.Handler
 
 type ProtectedRoute struct {
 	Path                   string
@@ -23,4 +23,5 @@ type ProtectedRoute struct {
 	RequireDeepLinkContext bool
 	Handler                http.Handler
 	Verifier               VerifyTokenFunc
+	AllowImpostering       bool
 }

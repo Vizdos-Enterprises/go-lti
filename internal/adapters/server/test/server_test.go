@@ -92,7 +92,7 @@ func TestCreateRoutes_WithProtectedRoutes_CustomVerifier(t *testing.T) {
 
 	called := false
 
-	customVerifier := func(_ lti_ports.Verifier, _ []string, next http.Handler) http.Handler {
+	customVerifier := func(_ lti_ports.Verifier, _ []string, _ bool, next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			called = true
 			// Inject a fake LTI session

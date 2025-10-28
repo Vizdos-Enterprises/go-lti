@@ -42,7 +42,7 @@ func parseAndValidate[T jwt.Claims](verifier lti_ports.Verifier, expectedAudienc
 	return &claims, nil
 }
 
-func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, next http.Handler) http.Handler {
+func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, allowImpostering bool, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(lti_domain.ContextKey_Session)
 		if err != nil {
@@ -77,6 +77,11 @@ func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, next http
 
 			ctx = lti_deeplink.ContextWithDeepLink(ctx, deepLinkContext)
 			ctx = context.WithValue(ctx, "rawDeepLink", deepLinkCookie)
+		}
+
+		if !allowImpostering && claims.Impostering {
+			http.Error(w, "impostering not allowed", http.StatusForbidden)
+			return
 		}
 
 		// Attach to context

@@ -7,16 +7,19 @@ import (
 // LTIJWT represents your internal app-issued JWT after an LTI launch.
 // It captures key contextual info for downstream authorization and telemetry.
 type LTIJWT struct {
-	TenantID         string              `json:"t"`
-	Deployment       string              `json:"d"`
-	ClientID         string              `json:"i"`
-	Roles            []Role              `json:"r"`
-	UserInfo         LTIJWT_UserInfo     `json:"u"`
-	CourseInfo       LTIJWT_CourseInfo   `json:"c"`
-	LaunchType       LTIService          `json:"s"`
-	LinkedResourceID string              `json:"lr"`
-	Platform         LTIJWT_ToolPlatform `json:"p"`
-	Custom           map[string]any      `json:"cu"`
+	TenantID               string              `json:"t"`
+	Deployment             string              `json:"d"`
+	ClientID               string              `json:"i"`
+	Roles                  []Role              `json:"r"`
+	UserInfo               LTIJWT_UserInfo     `json:"u"`
+	CourseInfo             LTIJWT_CourseInfo   `json:"c"`
+	LaunchType             LTIService          `json:"s"`
+	LinkedResourceID       string              `json:"lr"`
+	Platform               LTIJWT_ToolPlatform `json:"p"`
+	Custom                 map[string]any      `json:"cu"`
+	Impostering            bool                `json:"im"`
+	ImposteringSrc         string              `json:"ims,omitempty"`
+	ImposterLaunchRedirect string              `json:"ilr,omitempty"`
 	jwt.RegisteredClaims
 }
 

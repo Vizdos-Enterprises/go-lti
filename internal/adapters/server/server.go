@@ -11,9 +11,10 @@ import (
 )
 
 type Server struct {
-	launcher lti_ports.Launcher
-	verifier lti_ports.AsymetricVerifier
-	mux      http.ServeMux
+	launcher    lti_ports.Launcher
+	verifier    lti_ports.AsymetricVerifier
+	impostering lti_ports.Impostering
+	mux         http.ServeMux
 }
 
 func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux {
@@ -22,6 +23,10 @@ func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux 
 	mux.Handle("/lti/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	}))
+
+	if s.impostering != nil {
+		mux.HandleFunc("/lti/imposter", s.impostering.HandleImposterLaunch)
+	}
 
 	mux.HandleFunc(fmt.Sprintf("/lti/%s/launch", s.launcher.GetLTIVersion()), s.launcher.HandleLaunch)
 	mux.HandleFunc(fmt.Sprintf("/lti/%s/oidc", s.launcher.GetLTIVersion()), s.launcher.HandleOIDC)
@@ -85,7 +90,7 @@ func WithProtectedRoutes(routes ...lti_ports.ProtectedRoute) lti_ports.HTTPRoute
 			roleChecked := middleware.RequireRole(route.Role...)(route.Handler)
 
 			// Then wrap the result with the verifier
-			protected := vFunc(s.GetVerifier(), s.GetLauncher().GetAudience(), roleChecked)
+			protected := vFunc(s.GetVerifier(), s.GetLauncher().GetAudience(), route.AllowImpostering, roleChecked)
 			path := fmt.Sprintf("/lti/app%s", route.Path)
 			strip := fmt.Sprintf("/lti/app%s", strings.TrimRight(route.Path, "/"))
 			m.Handle(path, http.StripPrefix(strip, protected))

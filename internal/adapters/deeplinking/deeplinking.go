@@ -123,7 +123,7 @@ func (d DeepLinkingService) HandleLaunch(w http.ResponseWriter, r *http.Request,
 	deepLinkContextCookie := &http.Cookie{
 		Name:     ContextKey_DeepLink,
 		Value:    deepLinkContextJWT,
-		Path:     "/",
+		Path:     "/lti/app/",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
