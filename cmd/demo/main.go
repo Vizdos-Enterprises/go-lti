@@ -96,6 +96,12 @@ func main() {
 								"app_id": "here",
 							},
 							Targets: []lti_domain.DeepLinkingTarget{lti_domain.DeepLinkingTarget_Iframe},
+							LineItem: &lti_domain.DeepLinkLineItem{
+								Label:        "Demo Label",
+								ScoreMaximum: 100,
+								ResourceID:   "resource-id-demo",
+								Tag:          "demo-tag",
+							},
 						},
 					})
 				}),
