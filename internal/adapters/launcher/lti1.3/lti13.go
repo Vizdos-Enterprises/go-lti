@@ -325,7 +325,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    l.signer.GetIssuer(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Second)),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-10 * time.Second)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			Audience:  l.audience,
 			ID:        jwtID,

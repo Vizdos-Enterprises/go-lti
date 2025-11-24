@@ -107,7 +107,7 @@ func (d DeepLinkingService) HandleLaunch(w http.ResponseWriter, r *http.Request,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    d.signer.GetIssuer(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Second)),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-10 * time.Second)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
 			ID:        jwtID,
 		},

@@ -264,7 +264,7 @@ func initImpostering(sessionSigner lti_ports.Signer) lti_ports.Impostering {
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    verifier.GetIssuer(),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now().Add(-1 * time.Second)),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-10 * time.Second)),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
 			Audience:  []string{"lti-impostering"},
 			ID:        jwtID,
