@@ -219,7 +219,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 	requestType := lti_domain.LTIService(messageType)
 
 	if !ok || !slices.Contains(l.enabledServices, requestType) {
-		http.Error(w, "invalid message type", http.StatusUnauthorized)
+		http.Error(w, fmt.Sprintf("invalid message type: %s", messageType), http.StatusUnauthorized)
 		return
 	}
 
