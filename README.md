@@ -1,10 +1,14 @@
 # go-lti Framework
 
-A lightweight, hexagonal Go framework for building LTI 1.3-compliant servers that can integrate with any LMS (e.g., Agilix Buzz, Canvas, Schoology).
+A lightweight, hexagonal Go framework for building LTI 1.3-compliant servers that integrate with any LMS (e.g., Agilix Buzz, Canvas, Schoology).
 
-It's designed to be modular, multi-tenant supported, and easy to embed inside other Go services. From concept LTI integration to LTI app within minutes.
+Built for real-world deployment, it includes full support for Safari and cookieless contexts, handling third-party cookie restrictions seamlessly through a secure fallback flow so launches remain reliable across all browsers without extra work.*
+
+Designed to be modular, multi-tenant ready, and easy to embed, it lets you go from concept to a production-ready LTI integration in minutes.
 
 **AGS Coming Soon**
+
+*Currently uses a custom workaround; planned support for PostMessage methods later.
 
 ## Architecture
 
