@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 
@@ -181,12 +182,16 @@ func (p *pkceAuthorizer) exchangeForToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	useSecureCookie := true
+	if os.Getenv("INSECURE_COOKIES") == "true" {
+		useSecureCookie = false
+	}
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
 		Value:    signed,
 		Path:     exchangeInfo.Data.To,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   useSecureCookie,
 		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(w, cookie)

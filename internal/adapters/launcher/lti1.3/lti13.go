@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -219,12 +220,16 @@ func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	useSecureCookie := true
+	if os.Getenv("INSECURE_COOKIES") == "true" {
+		useSecureCookie = false
+	}
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
 		Value:    signed,
 		Path:     swapData.To,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   useSecureCookie,
 		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(w, cookie)

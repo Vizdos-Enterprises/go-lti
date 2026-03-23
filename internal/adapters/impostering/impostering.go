@@ -3,6 +3,7 @@ package impostering
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -94,12 +95,16 @@ func (s *ImposteringService) HandleImposterLaunch(w http.ResponseWriter, r *http
 		return
 	}
 
+	useSecureCookie := true
+	if os.Getenv("INSECURE_COOKIES") == "true" {
+		useSecureCookie = false
+	}
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
 		Value:    signed,
 		Path:     "/lti/app/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   useSecureCookie,
 		SameSite: http.SameSiteNoneMode,
 	}
 

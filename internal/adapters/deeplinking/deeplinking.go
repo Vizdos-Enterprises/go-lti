@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -120,12 +121,16 @@ func (d DeepLinkingService) HandleLaunch(w http.ResponseWriter, r *http.Request,
 		return
 	}
 
+	useSecureCookie := true
+	if os.Getenv("INSECURE_COOKIES") == "true" {
+		useSecureCookie = false
+	}
 	deepLinkContextCookie := &http.Cookie{
 		Name:     ContextKey_DeepLink,
 		Value:    deepLinkContextJWT,
 		Path:     "/lti/app/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   useSecureCookie,
 		SameSite: http.SameSiteNoneMode,
 	}
 

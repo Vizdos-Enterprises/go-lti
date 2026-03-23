@@ -23,10 +23,6 @@
                 isInIframe = true;
             }
 
-            if (!isInIframe) {
-                alert("not iframe");
-            }
-
             function generatePKCEVerifier(length = 64) {
                 const charset =
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
@@ -124,23 +120,19 @@
                 const js = await resp.json();
                 token = js.token;
 
-                console.log("Got", token);
-                console.log("Verifier", verifierCode);
+                window.dispatchEvent(
+                    new CustomEvent("lti:auth-init-ready", {}),
+                );
+                window.__ltiAuthInitReady = true;
 
                 trySendToPopup();
             })();
 
             function openHumanPopup() {
-                if (!popupTab || popupTab.closed) {
-                    popupTab = window.open(
-                        `/lti/auth/continue?exchange=${code}`,
-                        "_blank",
-                    );
-                    popupReady = false;
-                    sentToPopup = false;
-                }
-
-                trySendToPopup();
+                popupTab = window.open(
+                    `/lti/auth/continue?exchange=${code}`,
+                    "_blank",
+                );
             }
         </script>
     </head>
@@ -379,6 +371,7 @@
                     <div class="mt-8" x-show="!authFailed">
                         <button
                             type="button"
+                            data-testid="btn-continue"
                             x-bind:disabled="opening || authFailed"
                             x-on:click="
                                 if (authPassed && passedUrl) {
