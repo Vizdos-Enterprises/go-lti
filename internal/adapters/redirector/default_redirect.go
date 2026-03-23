@@ -2,6 +2,7 @@ package redirector
 
 import (
 	"net/http"
+	"net/url"
 
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
@@ -13,17 +14,26 @@ type defaultRedirector struct {
 	redirectURL string
 }
 
-func (rw *defaultRedirector) RedirectAfterLaunch(w http.ResponseWriter, r *http.Request, jwt string) {
+func (rw *defaultRedirector) RedirectAfterLaunch(w http.ResponseWriter, r *http.Request, swapToken string) {
+	next, err := url.Parse("/lti/1.3/swap")
+	if err != nil {
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	q := next.Query()
+	q.Set("code", swapToken)
+	next.RawQuery = q.Encode()
+
 	cookie := &http.Cookie{
-		Name:     lti_domain.ContextKey_Session,
-		Value:    jwt,
-		Path:     "/lti/app/",
+		Name:     lti_domain.ContextKey_CookieConfirmation,
+		Value:    swapToken,
+		Path:     "/lti/1.3/swap",
 		HttpOnly: true,
 		Secure:   true,
 		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(w, cookie)
-	http.Redirect(w, r, rw.redirectURL, http.StatusFound)
+	http.Redirect(w, r, next.String(), http.StatusFound)
 }
 
 func NewDefaultRedirector(baseURL string) lti_ports.Redirector {

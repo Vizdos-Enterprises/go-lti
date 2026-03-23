@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
 
@@ -35,8 +36,8 @@ func (s *HMACSigner) GetIssuer() string {
 // Sign generates a signed JWT from the provided claims.
 // Typically used with *domain.LTIJWT.
 func (s *HMACSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) {
-	// Enforce exp/iat defaults if the struct has none
-	if rc, ok := claims.(*jwt.RegisteredClaims); ok {
+	switch rc := claims.(type) {
+	case lti_domain.LTIJWT:
 		if rc.Issuer == "" {
 			rc.Issuer = s.issuer
 		}
@@ -49,6 +50,21 @@ func (s *HMACSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) 
 		if rc.NotBefore == nil {
 			rc.NotBefore = jwt.NewNumericDate(time.Now())
 		}
+		claims = rc
+	case *jwt.RegisteredClaims:
+		if rc.Issuer == "" {
+			rc.Issuer = s.issuer
+		}
+		if rc.IssuedAt == nil {
+			rc.IssuedAt = jwt.NewNumericDate(time.Now())
+		}
+		if rc.ExpiresAt == nil && ttl.Seconds() > 0 {
+			rc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(ttl))
+		}
+		if rc.NotBefore == nil {
+			rc.NotBefore = jwt.NewNumericDate(time.Now())
+		}
+		claims = rc
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

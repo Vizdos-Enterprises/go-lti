@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -78,11 +79,31 @@ func TestVerifyLTI_MissingCookie(t *testing.T) {
 
 	w := callMiddleware(t, mw)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401 missing cookie, got %d", w.Code)
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected StatusTemporaryRedirect for invalid token validity, got %d", w.Code)
 	}
+
 	if called {
-		t.Fatal("next handler should not have been called")
+		t.Fatal("expected handler not to be invoked")
+	}
+
+	location := w.Header().Get("Location")
+	if location == "" {
+		t.Fatal("expected redirect location header to be set")
+	}
+
+	u, err := url.Parse(location)
+	if err != nil {
+		t.Fatalf("failed to parse redirect location: %v", err)
+	}
+
+	if u.Path != "/lti/auth/error" {
+		t.Fatalf("expected redirect path %q, got %q", "/lti/auth/error", u.Path)
+	}
+
+	q := u.Query()
+	if got := q.Get("err"); got != "missing token" {
+		t.Fatalf("expected err=%q, got %q", "missing token", got)
 	}
 }
 
@@ -96,11 +117,31 @@ func TestVerifyLTI_InvalidToken(t *testing.T) {
 
 	w := callMiddleware(t, mw, cookie)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401 invalid token, got %d", w.Code)
-	}
 	if nextCalled {
 		t.Fatal("next handler should not run")
+	}
+
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected StatusTemporaryRedirect for invalid token validity, got %d", w.Code)
+	}
+
+	location := w.Header().Get("Location")
+	if location == "" {
+		t.Fatal("expected redirect location header to be set")
+	}
+
+	u, err := url.Parse(location)
+	if err != nil {
+		t.Fatalf("failed to parse redirect location: %v", err)
+	}
+
+	if u.Path != "/lti/auth/error" {
+		t.Fatalf("expected redirect path %q, got %q", "/lti/auth/error", u.Path)
+	}
+
+	q := u.Query()
+	if got := q.Get("err"); got != "invalid token" {
+		t.Fatalf("expected err=%q, got %q", "invalid token", got)
 	}
 }
 
@@ -114,11 +155,31 @@ func TestVerifyLTI_InvalidAudience(t *testing.T) {
 
 	w := callMiddleware(t, mw, cookie)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401 invalid audience, got %d", w.Code)
-	}
 	if nextCalled {
 		t.Fatal("next handler should not run")
+	}
+
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected StatusTemporaryRedirect for invalid token validity, got %d", w.Code)
+	}
+
+	location := w.Header().Get("Location")
+	if location == "" {
+		t.Fatal("expected redirect location header to be set")
+	}
+
+	u, err := url.Parse(location)
+	if err != nil {
+		t.Fatalf("failed to parse redirect location: %v", err)
+	}
+
+	if u.Path != "/lti/auth/error" {
+		t.Fatalf("expected redirect path %q, got %q", "/lti/auth/error", u.Path)
+	}
+
+	q := u.Query()
+	if got := q.Get("err"); got != "could not verify audience" {
+		t.Fatalf("expected err=%q, got %q", "could not verify audience", got)
 	}
 }
 
@@ -156,10 +217,30 @@ func TestVerifyLTI_TokenNotValid(t *testing.T) {
 
 	w := callMiddleware(t, mw, cookie)
 
-	if w.Code != http.StatusUnauthorized {
-		t.Fatalf("expected 401 for invalid token validity, got %d", w.Code)
+	if w.Code != http.StatusTemporaryRedirect {
+		t.Fatalf("expected StatusTemporaryRedirect for invalid token validity, got %d", w.Code)
 	}
+
 	if called {
 		t.Fatal("expected handler not to be invoked")
+	}
+
+	location := w.Header().Get("Location")
+	if location == "" {
+		t.Fatal("expected redirect location header to be set")
+	}
+
+	u, err := url.Parse(location)
+	if err != nil {
+		t.Fatalf("failed to parse redirect location: %v", err)
+	}
+
+	if u.Path != "/lti/auth/error" {
+		t.Fatalf("expected redirect path %q, got %q", "/lti/auth/error", u.Path)
+	}
+
+	q := u.Query()
+	if got := q.Get("err"); got != "invalid token" {
+		t.Fatalf("expected err=%q, got %q", "invalid token", got)
 	}
 }

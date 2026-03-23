@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"crypto/rand"
 	"sync"
 	"time"
 
@@ -19,8 +20,10 @@ var (
 type inMemoryRegistry struct {
 	mu sync.RWMutex
 
-	deployments map[string]lti_domain.Deployment // key: clientID|deploymentID
-	state       map[string]stateRecord
+	deployments    map[string]lti_domain.Deployment // key: clientID|deploymentID
+	state          map[string]stateRecord
+	swapTokens     map[string]*lti_domain.SwapToken
+	exchangeTokens map[string]*lti_domain.ExchangeToken
 }
 
 type stateRecord struct {
@@ -31,8 +34,10 @@ type stateRecord struct {
 // NewInMemoryRegistry creates a new in-memory registry.
 func NewInMemoryRegistry() lti_ports.EphemeralRegistry {
 	return &inMemoryRegistry{
-		deployments: make(map[string]lti_domain.Deployment),
-		state:       make(map[string]stateRecord),
+		deployments:    make(map[string]lti_domain.Deployment),
+		state:          make(map[string]stateRecord),
+		swapTokens:     make(map[string]*lti_domain.SwapToken),
+		exchangeTokens: make(map[string]*lti_domain.ExchangeToken),
 	}
 }
 
@@ -59,6 +64,66 @@ func (r *inMemoryRegistry) GetDeployment(ctx context.Context, clientID, deployme
 // ====================
 //  EphemeralStore interface
 // ====================
+
+func (r *inMemoryRegistry) SaveSwapToken(ctx context.Context, swapToken string, data lti_domain.SwapToken, ttl time.Duration) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.swapTokens[swapToken] = &data
+	return nil
+}
+
+func (r *inMemoryRegistry) GetAndDeleteSwapToken(ctx context.Context, swapToken string) (*lti_domain.SwapToken, error) {
+	if v, ok := r.swapTokens[swapToken]; ok {
+		delete(r.swapTokens, swapToken)
+		return v, nil
+	}
+
+	return nil, lti_domain.ErrSwapTokenNotFound
+}
+
+func (r *inMemoryRegistry) SaveExchangeToken(ctx context.Context, exchangeTokenID string, data lti_domain.ExchangeToken, ttl time.Duration) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.exchangeTokens[exchangeTokenID] = &data
+	return nil
+}
+
+func (r *inMemoryRegistry) ClaimExchangeToken(ctx context.Context, exchangeTokenID string, challenge string) (string, error) {
+	exch, ok := r.exchangeTokens[exchangeTokenID]
+	if !ok {
+		return "", lti_domain.ErrExchangeTokenNotFound
+	}
+
+	if exch.Exchanged {
+		return "", lti_domain.ErrExchangeTokenAlreadyExchanged
+	}
+
+	if exch.ClaimableUntil.Before(time.Now().UTC()) {
+		return "", lti_domain.ErrExchangeRedemptionExpired
+	}
+
+	authToken := rand.Text()
+
+	exch.AuthToken = authToken
+	exch.Exchanged = true
+	exch.Challenge = challenge
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.exchangeTokens[exchangeTokenID] = exch
+	return authToken, nil
+}
+
+func (r *inMemoryRegistry) GetAndDeleteExchangeToken(ctx context.Context, exchangeTokenID string) (*lti_domain.ExchangeToken, error) {
+	if v, ok := r.exchangeTokens[exchangeTokenID]; ok {
+		delete(r.exchangeTokens, exchangeTokenID)
+		return v, nil
+	}
+
+	return nil, lti_domain.ErrExchangeTokenNotFound
+}
 
 func (r *inMemoryRegistry) SaveState(ctx context.Context, stateID string, data lti_domain.State, ttl time.Duration) error {
 	r.mu.Lock()

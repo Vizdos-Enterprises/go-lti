@@ -15,9 +15,10 @@ import (
 )
 
 // setupLauncher creates a configured launcher with all fake adapters.
-func setupLauncher() (*launcher1dot3.LTI13_Launcher, *lti_testadapters.FakeRegistry, *lti_testadapters.FakeRedirect, *lti_testadapters.FakeSigner, *lti_testadapters.FakeLogger) {
+func setupLauncher() (*launcher1dot3.LTI13_Launcher, *lti_testadapters.FakeRegistry, *lti_testadapters.FakeRedirect, *lti_testadapters.FakeSigner, *lti_testadapters.FakeLogger, *lti_testadapters.FakeFallbackAuthorizer) {
 	reg := &lti_testadapters.FakeRegistry{}
 	redir := &lti_testadapters.FakeRedirect{}
+	fallback := &lti_testadapters.FakeFallbackAuthorizer{}
 	signer := &lti_testadapters.FakeSigner{ReturnSignedValue: "signed.jwt"}
 	logger := lti_testadapters.NewFakeLogger()
 
@@ -30,14 +31,15 @@ func setupLauncher() (*launcher1dot3.LTI13_Launcher, *lti_testadapters.FakeRegis
 		launcher1dot3.WithRedirector(redir),
 		launcher1dot3.WithSigner(signer),
 		launcher1dot3.WithLogger(logger),
+		launcher1dot3.WithFallbackAuthorizer(fallback),
 		launcher1dot3.WithKeyFunc(lti_testadapters.FakeKeyfuncProvider),
 	)
 
-	return l, reg, redir, signer, logger
+	return l, reg, redir, signer, logger, fallback
 }
 
 func TestHandleOIDC_Success(t *testing.T) {
-	l, reg, _, _, _ := setupLauncher()
+	l, reg, _, _, _, _ := setupLauncher()
 
 	form := url.Values{
 		"iss":               {"https://lms.example"},
@@ -69,7 +71,7 @@ func TestHandleOIDC_Success(t *testing.T) {
 }
 
 func TestHandleOIDC_InvalidIssuer(t *testing.T) {
-	l, _, _, _, logger := setupLauncher()
+	l, _, _, _, logger, _ := setupLauncher()
 
 	form := url.Values{
 		"iss":               {"https://wrong.example"},
@@ -94,7 +96,7 @@ func TestHandleOIDC_InvalidIssuer(t *testing.T) {
 }
 
 func TestHandleLaunch_Success(t *testing.T) {
-	l, reg, redir, signer, logger := setupLauncher()
+	l, reg, redir, _, logger, _ := setupLauncher()
 
 	// Pre-store valid state
 	stateID := reg.AddStateQuick("", lti_domain.State{
@@ -133,14 +135,13 @@ func TestHandleLaunch_Success(t *testing.T) {
 	if !redir.DidRedirect() {
 		t.Fatalf("expected RedirectAfterLaunch to be called")
 	}
-	if !redir.HasToken("signed.jwt") {
-		t.Fatalf("expected redirect to include signed.jwt")
+	if !redir.HasSwapToken() {
+		t.Fatalf("expected redirect to include a swaptoken")
 	}
-	signer.MustHaveSigned(t)
 }
 
 func TestHandleLaunch_MissingParams(t *testing.T) {
-	l, _, _, _, _ := setupLauncher()
+	l, _, _, _, _, _ := setupLauncher()
 
 	req := httptest.NewRequest(http.MethodPost, "/launch", strings.NewReader(""))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -153,7 +154,7 @@ func TestHandleLaunch_MissingParams(t *testing.T) {
 }
 
 func TestHandleLaunch_InvalidState(t *testing.T) {
-	l, _, _, _, logger := setupLauncher()
+	l, _, _, _, logger, _ := setupLauncher()
 
 	form := url.Values{"id_token": {"some.token"}, "state": {"does-not-exist"}}
 	req := httptest.NewRequest(http.MethodPost, "/launch", strings.NewReader(form.Encode()))

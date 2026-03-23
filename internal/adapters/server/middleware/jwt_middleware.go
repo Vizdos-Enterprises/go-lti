@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -46,13 +47,17 @@ func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, allowImpo
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(lti_domain.ContextKey_Session)
 		if err != nil {
-			http.Error(w, "missing token", http.StatusUnauthorized)
+			params := url.Values{}
+			params.Add("err", "missing token")
+			http.Redirect(w, r, "/lti/auth/error?"+params.Encode(), http.StatusTemporaryRedirect)
 			return
 		}
 
 		claims, err := parseAndValidate[lti_domain.LTIJWT](verifier, expectedAudience, cookie.Value)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusUnauthorized)
+			params := url.Values{}
+			params.Add("err", err.Error())
+			http.Redirect(w, r, "/lti/auth/error?"+params.Encode(), http.StatusTemporaryRedirect)
 			return
 		}
 

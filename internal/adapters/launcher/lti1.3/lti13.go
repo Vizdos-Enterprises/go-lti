@@ -1,8 +1,10 @@
 package launcher1dot3
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,6 +26,8 @@ type LTI13_Launcher struct {
 	redirector lti_ports.Redirector
 	signer     lti_ports.Signer
 	keyfunc    lti_ports.KeyfuncProvider
+
+	fallbackAuthorizer lti_ports.FallbackAuthorizer
 
 	imposterJWT *lti_domain.LTIJWT
 
@@ -138,6 +142,93 @@ func (l LTI13_Launcher) HandleOIDC(w http.ResponseWriter, r *http.Request) {
 	redirectURL := fmt.Sprintf("%s?%s", deployment.GetLTIAuthEndpoint(), v.Encode())
 
 	http.Redirect(w, r, redirectURL, http.StatusFound)
+}
+
+func (l LTI13_Launcher) HandleAuthFallback(w http.ResponseWriter, r *http.Request) {
+	l.fallbackAuthorizer.Route().ServeHTTP(w, r)
+}
+
+func (l LTI13_Launcher) generateExchangeCode(ctx context.Context, swapData *lti_domain.SwapToken) (string, error) {
+	exchange := lti_domain.ExchangeToken{
+		Data:           swapData,
+		ClaimableUntil: time.Now().UTC().Add(45 * time.Second),
+	}
+	exchangeID := rand.Text()
+
+	err := l.ephemeral.SaveExchangeToken(ctx, exchangeID, exchange, 10*time.Minute)
+	if err != nil {
+		return "", fmt.Errorf("generateExchangeToken: %w", err)
+	}
+	return exchangeID, nil
+}
+
+func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
+	swapCode := r.URL.Query().Get("code")
+	if swapCode == "" {
+		http.Error(w, "missing code", http.StatusBadRequest)
+		return
+	}
+
+	swapData, err := l.ephemeral.GetAndDeleteSwapToken(r.Context(), swapCode)
+	if err != nil {
+		if errors.Is(err, lti_domain.ErrSwapTokenNotFound) {
+			http.Error(w, "invalid code", http.StatusBadRequest)
+			return
+		}
+		l.logger.Error("failed to exchange swap token", "err", err)
+		http.Error(w, "failed to exchange code", http.StatusInternalServerError)
+		return
+	}
+
+	if swapData.RequestorUA != r.Header.Get("User-Agent") {
+		http.Error(w, "invalid user agent", http.StatusBadRequest)
+		return
+	}
+
+	c, err := r.Cookie(lti_domain.ContextKey_CookieConfirmation)
+	if err != nil && errors.Is(err, http.ErrNoCookie) {
+		if l.fallbackAuthorizer != nil {
+			ex, err := l.generateExchangeCode(r.Context(), swapData)
+			if err != nil {
+				http.Error(w, "failed to generate exchange code", http.StatusInternalServerError)
+				return
+			}
+			l.fallbackAuthorizer.HandleFallback(w, r, ex)
+			return
+		}
+
+		http.Error(w, "no fallback authorizer configured", http.StatusInternalServerError)
+		return
+	}
+
+	if err != nil {
+		l.logger.Error("failed to get confirmation cookie", "err", err.Error())
+		http.Error(w, "failed to get confirmation cookie", http.StatusInternalServerError)
+		return
+	}
+
+	if swapCode != c.Value {
+		http.Error(w, "swap not equal", http.StatusBadRequest)
+		return
+	}
+
+	signed, err := l.signer.Sign(swapData.Claims, time.Hour)
+	if err != nil {
+		l.logger.Error("failed to sign internal jwt", "error", err)
+		http.Error(w, "internal jwt creation failed", http.StatusInternalServerError)
+		return
+	}
+
+	cookie := &http.Cookie{
+		Name:     lti_domain.ContextKey_Session,
+		Value:    signed,
+		Path:     swapData.To,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
+	}
+	http.SetCookie(w, cookie)
+	http.Redirect(w, r, swapData.To, http.StatusFound)
 }
 
 func (l LTI13_Launcher) handleImpostering(w http.ResponseWriter, r *http.Request) {
@@ -323,27 +414,41 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		},
 		Roles: roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    l.signer.GetIssuer(),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			NotBefore: jwt.NewNumericDate(time.Now().Add(-10 * time.Second)),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
-			Audience:  l.audience,
-			ID:        jwtID,
+			Audience: l.audience,
+			ID:       jwtID,
+			Issuer:   l.signer.GetIssuer(),
 		},
 	}
 
-	// Sign it
-	signed, err := l.signer.Sign(internalClaims, time.Hour)
-	if err != nil {
-		l.logger.Error("failed to sign internal jwt", "error", err)
-		http.Error(w, "internal jwt creation failed", http.StatusInternalServerError)
-		return
-	}
-
 	if l.deepLinkingService != nil && l.deepLinkingService.IsDeepLinkLaunch(requestType) {
+		internalClaims.RegisteredClaims = jwt.RegisteredClaims{
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(-10 * time.Second)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)),
+		}
+		// Sign it
+		signed, err := l.signer.Sign(internalClaims, time.Hour)
+		if err != nil {
+			l.logger.Error("failed to sign internal jwt", "error", err)
+			http.Error(w, "internal jwt creation failed", http.StatusInternalServerError)
+			return
+		}
+
 		l.deepLinkingService.HandleLaunch(w, r, &internalClaims, signed, claims)
 		return
 	}
 
-	l.redirector.RedirectAfterLaunch(w, r, signed)
+	swapToken := rand.Text()
+	err = l.ephemeral.SaveSwapToken(r.Context(), swapToken, lti_domain.SwapToken{
+		To:          "/lti/app/",
+		RequestorUA: r.Header.Get("User-Agent"),
+		Claims:      internalClaims,
+	}, 30*time.Second)
+	if err != nil {
+		l.logger.Error("failed to save swap token", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	l.redirector.RedirectAfterLaunch(w, r, swapToken)
 }

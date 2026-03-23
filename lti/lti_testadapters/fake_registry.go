@@ -2,6 +2,7 @@ package lti_testadapters
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"sync"
 	"testing"
@@ -17,8 +18,16 @@ var (
 )
 
 type FakeRegistry struct {
-	States      sync.Map
-	Deployments sync.Map
+	States         sync.Map
+	Deployments    sync.Map
+	Swaps          sync.Map
+	ExchangeTokens sync.Map
+
+	lastSavedExchangeTokenID string
+}
+
+func (f *FakeRegistry) GetLastSavedExchangeTokenID() string {
+	return f.lastSavedExchangeTokenID
 }
 
 func (f *FakeRegistry) GetDeployment(_ context.Context, clientID, depID string) (lti_domain.Deployment, error) {
@@ -49,6 +58,58 @@ func (f *FakeRegistry) GetState(_ context.Context, key string) (*lti_domain.Stat
 func (f *FakeRegistry) DeleteState(_ context.Context, key string) error {
 	f.States.Delete(key)
 	return nil
+}
+
+func (f *FakeRegistry) SaveSwapToken(_ context.Context, swapToken string, data lti_domain.SwapToken, _ time.Duration) error {
+	f.Swaps.Store(swapToken, &data)
+	return nil
+}
+func (f *FakeRegistry) GetAndDeleteSwapToken(_ context.Context, swapToken string) (*lti_domain.SwapToken, error) {
+	val, ok := f.Swaps.Load(swapToken)
+	if !ok {
+		return nil, lti_domain.ErrSwapTokenNotFound
+	}
+	f.Swaps.Delete(swapToken)
+	return val.(*lti_domain.SwapToken), nil
+}
+
+func (f *FakeRegistry) SaveExchangeToken(ctx context.Context, exchangeTokenID string, data lti_domain.ExchangeToken, ttl time.Duration) error {
+	f.lastSavedExchangeTokenID = exchangeTokenID
+	f.ExchangeTokens.Store(exchangeTokenID, &data)
+	return nil
+}
+
+func (r *FakeRegistry) ClaimExchangeToken(ctx context.Context, exchangeTokenID string, challenge string) (string, error) {
+	v, ok := r.ExchangeTokens.Load(exchangeTokenID)
+	if !ok {
+		return "", lti_domain.ErrExchangeTokenNotFound
+	}
+	exch := v.(*lti_domain.ExchangeToken)
+	if exch.Exchanged {
+		return "", lti_domain.ErrExchangeTokenAlreadyExchanged
+	}
+
+	if exch.ClaimableUntil.Before(time.Now().UTC()) {
+		return "", lti_domain.ErrExchangeRedemptionExpired
+	}
+
+	authToken := rand.Text()
+
+	exch.AuthToken = authToken
+	exch.Exchanged = true
+	exch.Challenge = challenge
+
+	r.ExchangeTokens.Store(exchangeTokenID, exch)
+	return authToken, nil
+}
+
+func (r *FakeRegistry) GetAndDeleteExchangeToken(ctx context.Context, exchangeTokenID string) (*lti_domain.ExchangeToken, error) {
+	fmt.Println("Loading", exchangeTokenID)
+	v, ok := r.ExchangeTokens.LoadAndDelete(exchangeTokenID)
+	if ok {
+		return v.(*lti_domain.ExchangeToken), nil
+	}
+	return nil, lti_domain.ErrExchangeTokenNotFound
 }
 
 // Test Helpers

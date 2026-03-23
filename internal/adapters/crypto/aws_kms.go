@@ -182,7 +182,8 @@ func (k *KMSSigner) JWKs(ctx context.Context) (*lti_domain.JWKS, error) {
 func (k *KMSSigner) GetIssuer() string { return k.issuer }
 
 func (k *KMSSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) {
-	if rc, ok := claims.(*jwt.RegisteredClaims); ok {
+	switch rc := claims.(type) {
+	case lti_domain.LTIJWT:
 		if rc.Issuer == "" {
 			rc.Issuer = k.issuer
 		}
@@ -195,6 +196,21 @@ func (k *KMSSigner) Sign(claims jwt.Claims, ttl time.Duration) (string, error) {
 		if rc.NotBefore == nil {
 			rc.NotBefore = jwt.NewNumericDate(time.Now())
 		}
+		claims = rc
+	case *jwt.RegisteredClaims:
+		if rc.Issuer == "" {
+			rc.Issuer = k.issuer
+		}
+		if rc.IssuedAt == nil {
+			rc.IssuedAt = jwt.NewNumericDate(time.Now())
+		}
+		if rc.ExpiresAt == nil && ttl.Seconds() > 0 {
+			rc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(ttl))
+		}
+		if rc.NotBefore == nil {
+			rc.NotBefore = jwt.NewNumericDate(time.Now())
+		}
+		claims = rc
 	}
 
 	token := jwt.NewWithClaims(k.signingMethod, claims)

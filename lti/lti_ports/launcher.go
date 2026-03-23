@@ -12,6 +12,8 @@ type Launcher interface {
 	GetAudience() []string
 	HandleOIDC(w http.ResponseWriter, r *http.Request)
 	HandleLaunch(w http.ResponseWriter, r *http.Request)
+	HandleCodeSwap(w http.ResponseWriter, r *http.Request)
+	HandleAuthFallback(w http.ResponseWriter, r *http.Request)
 }
 
 type Keyfunc interface {

@@ -28,7 +28,7 @@ func RequireRole(requiredRoles ...lti_domain.Role) func(next http.Handler) http.
 				}
 			}
 
-			http.Error(w, "insufficient role", http.StatusForbidden)
+			http.Redirect(w, r, "/lti/auth/error?err=role", http.StatusTemporaryRedirect)
 		})
 	}
 }

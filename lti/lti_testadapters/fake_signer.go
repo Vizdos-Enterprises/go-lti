@@ -65,3 +65,9 @@ func (f *FakeSigner) MustHaveSigned(t *testing.T) {
 		t.Fatalf("expected FakeSigner.Sign() to be called but it was not")
 	}
 }
+func (f *FakeSigner) MustNotHaveSigned(t *testing.T) {
+	t.Helper()
+	if f.LastSigned != nil {
+		t.Fatalf("expected FakeSigner.Sign() to not be called but it was")
+	}
+}

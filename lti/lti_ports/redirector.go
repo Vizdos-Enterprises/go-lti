@@ -4,5 +4,5 @@ import "net/http"
 
 // Redirector abstracts where to send the user after a successful launch.
 type Redirector interface {
-	RedirectAfterLaunch(w http.ResponseWriter, r *http.Request, jwt string)
+	RedirectAfterLaunch(w http.ResponseWriter, r *http.Request, swapToken string)
 }

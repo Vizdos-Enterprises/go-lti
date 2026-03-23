@@ -34,6 +34,6 @@ func NewServer(opts ...ServerOption) *HTTPServer {
 }
 
 // CreateRoutes builds a ServeMux with all LTI endpoints and any protected routes.
-func (s *HTTPServer) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux {
+func (s *HTTPServer) CreateRoutes(opts ...lti_ports.HTTPRouteOption) http.Handler {
 	return s.inner.CreateRoutes(opts...)
 }

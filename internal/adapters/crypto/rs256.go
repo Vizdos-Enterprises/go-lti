@@ -64,8 +64,8 @@ func (s *RS256Signer) GetIssuer() string {
 
 // Sign creates a JWT using RS256 and the provided claims.
 func (s *RS256Signer) Sign(claims jwt.Claims, ttl time.Duration) (string, error) {
-	// Apply sensible defaults for registered claims.
-	if rc, ok := claims.(*jwt.RegisteredClaims); ok {
+	switch rc := claims.(type) {
+	case lti_domain.LTIJWT:
 		if rc.Issuer == "" {
 			rc.Issuer = s.issuer
 		}
@@ -78,6 +78,21 @@ func (s *RS256Signer) Sign(claims jwt.Claims, ttl time.Duration) (string, error)
 		if rc.NotBefore == nil {
 			rc.NotBefore = jwt.NewNumericDate(time.Now())
 		}
+		claims = rc
+	case *jwt.RegisteredClaims:
+		if rc.Issuer == "" {
+			rc.Issuer = s.issuer
+		}
+		if rc.IssuedAt == nil {
+			rc.IssuedAt = jwt.NewNumericDate(time.Now())
+		}
+		if rc.ExpiresAt == nil && ttl.Seconds() > 0 {
+			rc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(ttl))
+		}
+		if rc.NotBefore == nil {
+			rc.NotBefore = jwt.NewNumericDate(time.Now())
+		}
+		claims = rc
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

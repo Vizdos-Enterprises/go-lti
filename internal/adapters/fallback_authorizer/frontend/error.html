@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Unable to Open Activity</title>
+
+        <link rel="stylesheet" href="/lti/auth/styles.css" />
+
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+        ></script>
+
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            const err = urlParams.get("err");
+            const trace = urlParams.get("trace");
+
+            const hasOpener =
+                !!window.opener &&
+                window.opener !== window &&
+                !window.opener.closed;
+
+            if (err && hasOpener) {
+                window.opener.postMessage(
+                    {
+                        type: "auth_failure",
+                        err,
+                        trace,
+                        dontClose: true,
+                    },
+                    window.location.origin,
+                );
+            }
+        </script>
+    </head>
+    <body class="min-h-svh bg-slate-50 text-slate-900">
+        <div
+            <div
+                x-data="{
+                    err: new URLSearchParams(window.location.search).get('err'),
+
+                    title() {
+                        if (this.err === 'invalid token') return 'Session Expired';
+                        if (this.err === 'missing token') return 'Session Missing';
+                        if (this.err === 'role') return 'Access Restricted';
+                        return 'Unable to Open Activity';
+                    },
+
+                    message() {
+                        if (this.err === 'invalid token') {
+                            return 'Your session has expired or is no longer valid. Please return to your LMS and reopen the activity.';
+                        }
+                        if (this.err === 'missing token') {
+                            return 'This activity was opened without a valid session. Please return to your LMS and launch it again.';
+                        }
+                        if (this.err === 'role') {
+                            return 'You do not have permission to view this activity. Please contact your instructor or try accessing it with a different account.';
+                        }
+                        return 'This page is missing required launch data. Please open the activity from your LMS.';
+                    }
+                }"
+            class="flex min-h-screen items-center justify-center px-6"
+        >
+            <div class="w-full max-w-md">
+                <div class="flex flex-col items-center text-center">
+                    <div
+                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-rose-100 text-rose-800"
+                    >
+                        <svg
+                            class="h-8 w-8"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="icon icon-tabler icons-tabler-outline icon-tabler-lock-exclamation"
+                        >
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path
+                                d="M15 21h-8a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2h10a2 2 0 0 1 1.734 1.002"
+                            />
+                            <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+                            <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
+                            <path d="M19 16v3" />
+                            <path d="M19 22v.01" />
+                        </svg>
+                    </div>
+
+                    <h1
+                        class="mt-6 text-xl font-semibold tracking-tight text-slate-900"
+                        x-text="title()"
+                    ></h1>
+
+                    <p
+                        class="mt-2 text-sm leading-6 text-slate-600"
+                        x-text="message()"
+                    ></p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

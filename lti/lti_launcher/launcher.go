@@ -47,6 +47,13 @@ func WithRegistry(reg lti_ports.Registry) LauncherOption {
 	}}
 }
 
+// WithFallbackAuthorizer sets the fallback authorizer used for non-LTI launches.
+func WithFallbackAuthorizer(fallback lti_ports.FallbackAuthorizer) LauncherOption {
+	return LauncherOption{toInternal: func() launcher1dot3.LauncherOptions {
+		return launcher1dot3.WithFallbackAuthorizer(fallback)
+	}}
+}
+
 // WithEphemeralStorage sets the store used for transient states and nonces.
 func WithEphemeralStorage(store lti_ports.EphemeralStore) LauncherOption {
 	return LauncherOption{toInternal: func() launcher1dot3.LauncherOptions {

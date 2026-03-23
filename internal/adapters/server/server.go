@@ -1,11 +1,13 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/server/middleware"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 )
@@ -17,7 +19,25 @@ type Server struct {
 	mux         http.ServeMux
 }
 
-func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux {
+func withTrace(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		traceID := r.Header.Get("X-Trace-ID")
+		if traceID == "" {
+			traceID = uuid.NewString()
+		}
+		requestID := uuid.NewString()
+
+		ctx := context.WithValue(r.Context(), "trace-id", traceID)
+		ctx = context.WithValue(ctx, "request-id", requestID)
+
+		w.Header().Set("X-Trace-ID", traceID)
+		w.Header().Set("X-Request-ID", requestID)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("/lti/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,6 +48,8 @@ func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux 
 		mux.HandleFunc("/lti/imposter", s.impostering.HandleImposterLaunch)
 	}
 
+	mux.Handle("/lti/auth/", http.StripPrefix("/lti/auth", http.HandlerFunc(s.launcher.HandleAuthFallback)))
+	mux.HandleFunc(fmt.Sprintf("/lti/%s/swap", s.launcher.GetLTIVersion()), s.launcher.HandleCodeSwap)
 	mux.HandleFunc(fmt.Sprintf("/lti/%s/launch", s.launcher.GetLTIVersion()), s.launcher.HandleLaunch)
 	mux.HandleFunc(fmt.Sprintf("/lti/%s/oidc", s.launcher.GetLTIVersion()), s.launcher.HandleOIDC)
 	mux.HandleFunc("/lti/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +88,9 @@ func (s *Server) CreateRoutes(opts ...lti_ports.HTTPRouteOption) *http.ServeMux 
 		})
 	}
 
-	return mux
+	return withTrace(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mux.ServeHTTP(w, r)
+	}))
 }
 
 func (s *Server) GetVerifier() lti_ports.Verifier {

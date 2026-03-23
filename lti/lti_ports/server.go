@@ -9,7 +9,7 @@ import (
 type HTTPRouteOption func(server Server, mux *http.ServeMux)
 
 type Server interface {
-	CreateRoutes(opts ...HTTPRouteOption) *http.ServeMux
+	CreateRoutes(opts ...HTTPRouteOption) http.Handler
 
 	GetLauncher() Launcher
 	GetVerifier() Verifier

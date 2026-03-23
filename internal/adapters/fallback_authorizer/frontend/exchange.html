@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Securing Session…</title>
+
+        <link rel="stylesheet" href="/lti/auth/styles.css" />
+
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+        ></script>
+
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            const exchangeTokenID = urlParams.get("exchange");
+            const hasExchangeToken = !!exchangeTokenID;
+            const hasOpener =
+                !!window.opener &&
+                window.opener !== window &&
+                !window.opener.closed;
+            const hasLaunchData = hasExchangeToken && hasOpener;
+
+            let shouldBlockUnload = hasLaunchData;
+            if (hasLaunchData) {
+                window.addEventListener("beforeunload", (e) => {
+                    if (shouldBlockUnload) {
+                        e.preventDefault();
+                        e.returnValue = ""; // required for Chrome/Safari
+                    }
+                });
+            }
+
+            async function run() {
+                if (!hasLaunchData) return;
+
+                window.opener.postMessage(
+                    { type: "popup_ready" },
+                    window.location.origin,
+                );
+
+                const exchangeForAuth = async (token, verifier) => {
+                    const response = await fetch(`/lti/auth/exchange`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            exchange: exchangeTokenID,
+                            token,
+                            verifier,
+                        }),
+                    });
+
+                    try {
+                        const js = await response.json();
+
+                        if (!response.ok) {
+                            const { trace, err } = js;
+                            throw { err: err || "FAILED", trace };
+                        }
+
+                        shouldBlockUnload = false;
+                        window.opener?.postMessage(
+                            {
+                                type: "auth_pass",
+                                to_url: js.redirect,
+                            },
+                            window.location.origin,
+                        );
+
+                        window.location.href = js.redirect;
+                    } catch (e) {
+                        console.error(e);
+                        shouldBlockUnload = false;
+                        window.opener?.postMessage(
+                            {
+                                type: "auth_failure",
+                                err: e.err || "UNKNOWN",
+                                trace: e.trace,
+                            },
+                            window.location.origin,
+                        );
+                    }
+                };
+
+                window.addEventListener("message", (e) => {
+                    if (e.origin !== window.location.origin) return;
+                    if (e.data?.type !== "verifier_code") return;
+
+                    const { verifier, token } = e.data;
+                    exchangeForAuth(token, verifier).catch((err) => {
+                        console.error(err);
+                        shouldBlockUnload = false;
+
+                        window.opener?.postMessage(
+                            {
+                                type: "auth_failure",
+                                err: err?.err || "FAILED",
+                                trace: err?.trace || null,
+                            },
+                            window.location.origin,
+                        );
+                    });
+                });
+            }
+
+            run().catch((err) => {
+                shouldBlockUnload = false;
+
+                window.opener?.postMessage(
+                    {
+                        type: "auth_failure",
+                        err: err?.err || "err",
+                        trace: err?.trace || "trace",
+                    },
+                    window.location.origin,
+                );
+            });
+        </script>
+    </head>
+    <body class="min-h-svh bg-slate-50 text-slate-900">
+        <div
+            x-data="{ missingLaunchData: !hasLaunchData }"
+            class="flex min-h-screen items-center justify-center px-6"
+        >
+            <div class="w-full max-w-md">
+                <div
+                    x-show="!missingLaunchData"
+                    class="flex flex-col items-center text-center"
+                >
+                    <div
+                        class="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-sky-600"
+                        aria-hidden="true"
+                    ></div>
+
+                    <h1
+                        class="mt-6 text-xl font-semibold tracking-tight text-slate-900"
+                    >
+                        Securing Session…
+                    </h1>
+
+                    <p class="mt-2 text-sm leading-6 text-slate-600">
+                        Please wait while we finish signing you in.
+                    </p>
+                </div>
+
+                <div
+                    x-show="missingLaunchData"
+                    class="flex flex-col items-center text-center"
+                >
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-100"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-5 w-5 text-amber-700"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 9v3.75m0 3.75h.007v.008H12v-.008z"
+                            />
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M10.29 3.86L1.82 18a2.25 2.25 0 001.93 3.375h16.5A2.25 2.25 0 0022.18 18L13.71 3.86a2.25 2.25 0 00-3.42 0z"
+                            />
+                        </svg>
+                    </div>
+
+                    <h1
+                        class="mt-6 text-xl font-semibold tracking-tight text-slate-900"
+                    >
+                        Unable to Open Activity
+                    </h1>
+
+                    <p class="mt-2 text-sm leading-6 text-slate-600">
+                        This page is missing required launch data. Please open
+                        the activity from your LMS.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

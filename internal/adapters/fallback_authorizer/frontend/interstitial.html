@@ -1,0 +1,457 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Open Activity</title>
+
+        <link rel="stylesheet" href="/lti/auth/styles.css" />
+
+        <script
+            defer
+            src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+        ></script>
+
+        <script>
+            let isInIframe = false;
+            try {
+                if (window.parent.location.href) {
+                    isInIframe =
+                        window.location.href !== window.parent.location.href;
+                }
+            } catch (e) {
+                isInIframe = true;
+            }
+
+            if (!isInIframe) {
+                alert("not iframe");
+            }
+
+            function generatePKCEVerifier(length = 64) {
+                const charset =
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+                const bytes = new Uint8Array(length);
+                crypto.getRandomValues(bytes);
+
+                let out = "";
+                for (let i = 0; i < length; i++) {
+                    out += charset[bytes[i] % charset.length];
+                }
+                return out;
+            }
+
+            async function pkceChallengeS256(verifier) {
+                const data = new TextEncoder().encode(verifier);
+                const digest = await crypto.subtle.digest("SHA-256", data);
+                const bytes = new Uint8Array(digest);
+
+                let binary = "";
+                for (const b of bytes) binary += String.fromCharCode(b);
+
+                return btoa(binary)
+                    .replace(/\+/g, "-")
+                    .replace(/\//g, "_")
+                    .replace(/=+$/, "");
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get("exchange");
+
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete("exchange");
+            window.history.replaceState(
+                {},
+                document.title,
+                cleanUrl.toString(),
+            );
+
+            const TARGET_ORIGIN = window.location.origin;
+
+            let popupTab = null;
+            let popupReady = false;
+            let sentToPopup = false;
+
+            let verifierCode = null;
+            let token = null;
+
+            function trySendToPopup() {
+                if (sentToPopup) return;
+                if (!popupTab || popupTab.closed) return;
+                if (!popupReady) return;
+                if (!verifierCode || !token) return;
+
+                popupTab.postMessage(
+                    {
+                        type: "verifier_code",
+                        verifier: verifierCode,
+                        token: token,
+                    },
+                    TARGET_ORIGIN,
+                );
+
+                sentToPopup = true;
+            }
+
+            window.addEventListener("message", (e) => {
+                if (e.origin !== TARGET_ORIGIN) return;
+                if (e.source !== popupTab) return;
+                if (e.data?.type !== "popup_ready") return;
+
+                popupReady = true;
+                trySendToPopup();
+            });
+
+            (async () => {
+                verifierCode = generatePKCEVerifier(128);
+                const challenge = await pkceChallengeS256(verifierCode);
+
+                const resp = await fetch(`/lti/auth/init`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        challenge,
+                        exchange_token: code,
+                    }),
+                });
+
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error("failed to exchange code: " + text);
+                }
+
+                const js = await resp.json();
+                token = js.token;
+
+                console.log("Got", token);
+                console.log("Verifier", verifierCode);
+
+                trySendToPopup();
+            })();
+
+            function openHumanPopup() {
+                if (!popupTab || popupTab.closed) {
+                    popupTab = window.open(
+                        `/lti/auth/continue?exchange=${code}`,
+                        "_blank",
+                    );
+                    popupReady = false;
+                    sentToPopup = false;
+                }
+
+                trySendToPopup();
+            }
+        </script>
+    </head>
+    <body class="min-h-screen text-slate-900">
+        <div
+            x-data="{
+                opening: false,
+                burned: false,
+                authFailed: false,
+                authPassed: false,
+                passedUrl: '',
+                errorCode: '',
+                traceId: '',
+                isExpiredError() {
+                    return this.errorCode === 'invalid token' || this.errorCode === 'missing token';
+                },
+                failedEyebrow() {
+                    return this.isExpiredError()
+                        ? 'Security Check Expired'
+                        : 'Security Check Failed';
+                },
+                failedTitle() {
+                    return this.isExpiredError()
+                        ? 'Please Refresh your Browser'
+                        : 'We couldn’t secure your browser.';
+                },
+                failedMessage() {
+                    return this.isExpiredError()
+                        ? 'This security check has expired. Please refresh this page and try again.'
+                        : 'Please refresh this page and try again. If this issue continues, please share a screenshot of this page with support.';
+                }
+            }"
+            x-init="
+                window.addEventListener('message', (e) => {
+                    if (e.origin !== window.location.origin) return;
+
+                    if (e.data?.type === 'exchange_burned') {
+                        burned = true;
+                        opening = false;
+                        return;
+                    }
+
+                    if (e.data?.type === 'auth_pass') {
+                        authPassed = true;
+                        opening = false;
+                        burned = false;
+                        passedUrl = e.data.to_url || '';
+                        return;
+                    }
+
+                    if (e.data?.type === 'auth_failure') {
+                        authFailed = true;
+                        authPassed = false;
+                        opening = false;
+                        burned = false;
+
+                        errorCode = e.data.err || 'Please reload and try again.';
+                        traceId = e.data.trace || 'Do not refresh the new tab that opened.';
+
+                        if (popupTab && !popupTab.closed && e.data.dontClose !== true) {
+                            popupTab.close();
+                        }
+                    }
+                });
+            "
+            class="flex min-h-screen items-center justify-center px-6 py-12"
+        >
+            <div class="w-full max-w-124">
+                <div
+                    class="rounded-xl border border-slate-200 bg-white px-8 py-12 shadow-xl shadow-slate-200/60"
+                >
+                    <div class="mb-1 flex flex-col gap-3">
+                        <div
+                            class="flex h-12 w-12 items-center justify-center text-sky-800"
+                            x-show="!authFailed && !authPassed"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="icon icon-tabler icons-tabler-outline icon-tabler-lock"
+                            >
+                                <path
+                                    stroke="none"
+                                    d="M0 0h24v24H0z"
+                                    fill="none"
+                                />
+                                <path
+                                    d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-6"
+                                />
+                                <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+                                <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
+                            </svg>
+                        </div>
+
+                        <div
+                            class="flex h-12 w-12 items-center justify-center text-green-800"
+                            x-show="authPassed"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="icon icon-tabler icons-tabler-outline icon-tabler-lock-open"
+                            >
+                                <path
+                                    stroke="none"
+                                    d="M0 0h24v24H0z"
+                                    fill="none"
+                                />
+                                <path
+                                    d="M5 13a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v6a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -6"
+                                />
+                                <path d="M11 16a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+                                <path d="M8 11v-5a4 4 0 0 1 8 0" />
+                            </svg>
+                        </div>
+
+                        <div
+                            class="flex h-12 w-12 items-center justify-center text-rose-800"
+                            x-show="authFailed"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="icon icon-tabler icons-tabler-outline icon-tabler-lock-x"
+                            >
+                                <path
+                                    stroke="none"
+                                    d="M0 0h24v24H0z"
+                                    fill="none"
+                                />
+                                <path
+                                    d="M13 21h-6a2 2 0 0 1 -2 -2v-6a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v.5"
+                                />
+                                <path d="M11 16a1 1 0 1 0 2 0a1 1 0 0 0 -2 0" />
+                                <path d="M8 11v-4a4 4 0 1 1 8 0v4" />
+                                <path d="M22 22l-5 -5" />
+                                <path d="M17 22l5 -5" />
+                            </svg>
+                        </div>
+
+                        <div>
+                            <p
+                                class="text-sm font-medium text-sky-700"
+                                x-show="!authFailed && !authPassed"
+                            >
+                                Security Check
+                            </p>
+
+                            <p
+                                class="text-sm font-medium text-rose-700"
+                                x-show="authFailed"
+                                x-text="failedEyebrow()"
+                            ></p>
+
+                            <p
+                                class="text-sm font-medium text-green-700"
+                                x-show="authPassed"
+                            >
+                                Security Check Passed
+                            </p>
+
+                            <h1
+                                class="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
+                                x-show="!authFailed && !authPassed"
+                            >
+                                Verify you are human
+                            </h1>
+
+                            <h1
+                                class="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
+                                x-show="authPassed"
+                            >
+                                Thank you for completing the security check.
+                            </h1>
+
+                            <h1
+                                class="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
+                                x-show="authFailed"
+                                x-text="failedTitle()"
+                            ></h1>
+                        </div>
+                    </div>
+
+                    <p
+                        class="text-sm leading-6 text-slate-600"
+                        x-show="!authPassed && !authFailed && !burned"
+                    >
+                        Once confirmed, you'll be redirected to a new tab.
+                    </p>
+
+                    <p
+                        class="text-sm leading-6 text-sky-700"
+                        x-show="burned && !authPassed && !authFailed"
+                    >
+                        Waiting for confirmation from the secure window…
+                    </p>
+
+                    <p
+                        class="text-sm leading-6 text-slate-600"
+                        x-show="authPassed"
+                    >
+                        Your browser is ready. Click below to open the activity.
+                    </p>
+
+                    <p
+                        class="text-sm leading-6 text-slate-600"
+                        x-show="authFailed"
+                        x-text="failedMessage()"
+                    ></p>
+
+                    <div class="mt-4" x-show="authFailed && !isExpiredError()">
+                        <div
+                            class="rounded bg-rose-100 px-5 py-4 text-rose-950"
+                        >
+                            <p class="text-xs">Error Details</p>
+                            <p class="text-lg font-bold" x-text="errorCode"></p>
+                            <p class="text-xs" x-text="traceId"></p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8" x-show="!authFailed">
+                        <button
+                            type="button"
+                            x-bind:disabled="opening || authFailed"
+                            x-on:click="
+                                if (authPassed && passedUrl) {
+                                    window.open(passedUrl, '_blank');
+                                    return;
+                                }
+
+                                if (opening || authFailed) return;
+
+                                opening = true;
+                                openHumanPopup();
+                            "
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 transition duration-200 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                            <span
+                                x-text="
+                                    authPassed
+                                        ? 'Open Activity'
+                                        : ((opening || burned)
+                                            ? 'Waiting for confirmation…'
+                                            : 'I am Human')
+                                "
+                            ></span>
+
+                            <svg
+                                x-show="!opening"
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M13.5 4.5H19.5V10.5M19 5L10 14M5 8V19H16"
+                                />
+                            </svg>
+
+                            <svg
+                                x-show="opening"
+                                class="h-4 w-4 animate-spin"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <p
+                        class="mt-4 text-xs leading-5 text-slate-500"
+                        x-show="!authFailed && !authPassed"
+                    >
+                        If nothing happens, check your pop-up settings and try
+                        again.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

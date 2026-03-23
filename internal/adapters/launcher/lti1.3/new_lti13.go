@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/fallback_authorizer"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/keyfunc"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/redirector"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/registry"
@@ -53,6 +54,10 @@ func NewLauncher(opts ...LauncherOptions) *LTI13_Launcher {
 		l.keyfunc = keyfunc.DefaultKeyfuncProviderAdapter()
 	}
 
+	if l.fallbackAuthorizer == nil {
+		l.fallbackAuthorizer = fallback_authorizer.New(l.ephemeral, l.signer, l.logger)
+	}
+
 	return l
 }
 
@@ -65,6 +70,12 @@ func WithBaseURL(baseURL string) LauncherOptions {
 func WithLogger(logger lti_ports.Logger) LauncherOptions {
 	return func(s *LTI13_Launcher) {
 		s.logger = logger
+	}
+}
+
+func WithFallbackAuthorizer(fallback lti_ports.FallbackAuthorizer) LauncherOptions {
+	return func(s *LTI13_Launcher) {
+		s.fallbackAuthorizer = fallback
 	}
 }
 

@@ -16,9 +16,10 @@ import (
 // --- Fakes --------------------------------------------------------------
 
 type fakeLauncher struct {
-	versionCalled bool
-	launchCalled  bool
-	oidcCalled    bool
+	versionCalled  bool
+	launchCalled   bool
+	oidcCalled     bool
+	fallbackCalled bool
 }
 
 func (f *fakeLauncher) GetLTIVersion() string {
@@ -32,6 +33,16 @@ func (f *fakeLauncher) HandleLaunch(w http.ResponseWriter, _ *http.Request) {
 }
 func (f *fakeLauncher) HandleOIDC(w http.ResponseWriter, _ *http.Request) {
 	f.oidcCalled = true
+	w.WriteHeader(http.StatusOK)
+}
+
+func (f *fakeLauncher) HandleAuthFallback(w http.ResponseWriter, _ *http.Request) {
+	f.fallbackCalled = true
+	w.WriteHeader(http.StatusOK)
+}
+
+func (f *fakeLauncher) HandleCodeSwap(w http.ResponseWriter, _ *http.Request) {
+
 	w.WriteHeader(http.StatusOK)
 }
 
