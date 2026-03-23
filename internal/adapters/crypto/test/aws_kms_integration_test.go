@@ -21,6 +21,10 @@ import (
 )
 
 func TestKMSSigner_LocalStackIntegration(t *testing.T) {
+	if os.Getenv("LOCALSTACK") != "true" {
+		t.Skip("Skipping localstack")
+		return
+	}
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{

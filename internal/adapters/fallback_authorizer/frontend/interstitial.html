@@ -312,6 +312,7 @@
                             <h1
                                 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
                                 x-show="!authFailed && !authPassed"
+                                data-testid="title-verify"
                             >
                                 Verify you are human
                             </h1>
@@ -319,12 +320,14 @@
                             <h1
                                 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
                                 x-show="authPassed"
+                                data-testid="title-verify-success"
                             >
                                 Thank you for completing the security check.
                             </h1>
 
                             <h1
                                 class="mt-1 text-2xl font-semibold tracking-tight text-slate-900"
+                                data-testid="title-verify-failed"
                                 x-show="authFailed"
                                 x-text="failedTitle()"
                             ></h1>

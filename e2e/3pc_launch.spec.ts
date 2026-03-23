@@ -18,6 +18,15 @@ export async function WaitForLTIInit(frame: Frame) {
   });
 }
 
+export async function ConfirmHeader(
+  page: Page,
+  header: "title-verify" | "title-verify-success" | "title-verify-failed",
+) {
+  await test.step(`confirm title is ${header}`, async () => {
+    await expect(page.frameLocator("iframe").getByTestId(header)).toBeVisible();
+  });
+}
+
 async function waitForSpecificAuthMessage(
   frame: Frame,
   expectedType: "auth_pass" | "auth_failure" | "exchange_burned",
@@ -46,21 +55,55 @@ test.describe("3pc tests", () => {
     const platform = GetBaseURL(testInfo, "platform");
     const lti = GetBaseURL(testInfo, "lti");
 
-    await page.goto(`${platform}/render`);
+    await test.step("open render page and wait for iframe auth init", async () => {
+      await page.goto(`${platform}/render`);
 
-    const frame = await getStartFrame(page);
+      const frame = await getStartFrame(page);
 
-    await WaitForLTIInit(frame);
+      await WaitForLTIInit(frame);
 
-    const newPagePromise = context.waitForEvent("page");
-    const authSuccessPromise = waitForSpecificAuthMessage(frame, "auth_pass");
+      const newPagePromise = context.waitForEvent("page");
+      const authSuccessPromise = waitForSpecificAuthMessage(frame, "auth_pass");
 
-    await page.frameLocator("iframe").getByTestId("btn-continue").click();
+      await ConfirmHeader(page, "title-verify");
 
-    const popup = await newPagePromise;
-    await popup.waitForLoadState();
+      await page.frameLocator("iframe").getByTestId("btn-continue").click();
 
-    await authSuccessPromise;
-    await expect(popup).toHaveURL(`${lti}/lti/app/`);
+      const popup = await newPagePromise;
+      await popup.waitForLoadState();
+
+      await authSuccessPromise;
+      await expect(popup).toHaveURL(`${lti}/lti/app/`);
+
+      await ConfirmHeader(page, "title-verify-success");
+    });
+
+    await test.step("clicking Open Activity works once loaded", async () => {
+      await ConfirmHeader(page, "title-verify-success");
+      const newPagePromise = context.waitForEvent("page");
+
+      await page.frameLocator("iframe").getByTestId("btn-continue").click();
+      const popup = await newPagePromise;
+      await popup.waitForLoadState();
+
+      await expect(popup).toHaveURL(`${lti}/lti/app/`);
+    });
+
+    await test.step("updates original launcher when token is expired / missing", async () => {
+      await ConfirmHeader(page, "title-verify-success");
+      await page.context().clearCookies();
+      const newPagePromise = context.waitForEvent("page");
+
+      await page.frameLocator("iframe").getByTestId("btn-continue").click();
+      const popup = await newPagePromise;
+      await popup.waitForLoadState();
+
+      await expect(popup).toHaveURL(`${lti}/lti/auth/error?err=missing+token`);
+      await expect(popup.getByTestId("error-title")).toHaveText(
+        "Session Missing",
+      );
+
+      await ConfirmHeader(page, "title-verify-failed");
+    });
   });
 });
