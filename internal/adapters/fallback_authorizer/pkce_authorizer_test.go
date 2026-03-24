@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/telemetry"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_testadapters"
 )
@@ -20,7 +21,7 @@ func setupAuthorizer() (*pkceAuthorizer, *lti_testadapters.FakeRegistry, *lti_te
 	signer := &lti_testadapters.FakeSigner{ReturnSignedValue: "signed.jwt"}
 	logger := lti_testadapters.NewFakeLogger()
 
-	p := New(reg, signer, logger)
+	p := New(reg, signer, logger, telemetry.NoopTelemetry{})
 	return p, reg, signer, logger
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/keyfunc"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/redirector"
 	"github.com/vizdos-enterprises/go-lti/internal/adapters/registry"
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/telemetry"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_logger"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
@@ -54,8 +55,12 @@ func NewLauncher(opts ...LauncherOptions) *LTI13_Launcher {
 		l.keyfunc = keyfunc.DefaultKeyfuncProviderAdapter()
 	}
 
+	if l.telemetry == nil {
+		l.telemetry = telemetry.NoopTelemetry{}
+	}
+
 	if l.fallbackAuthorizer == nil {
-		l.fallbackAuthorizer = fallback_authorizer.New(l.ephemeral, l.signer, l.logger)
+		l.fallbackAuthorizer = fallback_authorizer.New(l.ephemeral, l.signer, l.logger, l.telemetry)
 	}
 
 	return l
@@ -76,6 +81,12 @@ func WithLogger(logger lti_ports.Logger) LauncherOptions {
 func WithFallbackAuthorizer(fallback lti_ports.FallbackAuthorizer) LauncherOptions {
 	return func(s *LTI13_Launcher) {
 		s.fallbackAuthorizer = fallback
+	}
+}
+
+func WithTelemetry(telemetry lti_ports.TelemetryPort) LauncherOptions {
+	return func(s *LTI13_Launcher) {
+		s.telemetry = telemetry
 	}
 }
 

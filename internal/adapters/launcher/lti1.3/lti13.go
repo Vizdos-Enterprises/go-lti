@@ -27,6 +27,7 @@ type LTI13_Launcher struct {
 	redirector lti_ports.Redirector
 	signer     lti_ports.Signer
 	keyfunc    lti_ports.KeyfuncProvider
+	telemetry  lti_ports.TelemetryPort
 
 	fallbackAuthorizer lti_ports.FallbackAuthorizer
 
@@ -224,6 +225,14 @@ func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
 	if os.Getenv("INSECURE_COOKIES") == "true" {
 		useSecureCookie = false
 	}
+	l.telemetry.EmitLaunch(lti_domain.LaunchEvent{
+		At:        time.Now().UTC(),
+		Method:    lti_domain.LaunchMethodDirect,
+		Success:   true,
+		Platform:  swapData.Claims.Platform.Name,
+		UserAgent: swapData.RequestorUA,
+		Duration:  time.Since(swapData.StartAt),
+	})
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
 		Value:    signed,
@@ -448,6 +457,7 @@ func (l LTI13_Launcher) HandleLaunch(w http.ResponseWriter, r *http.Request) {
 		To:          "/lti/app/",
 		RequestorUA: r.Header.Get("User-Agent"),
 		Claims:      internalClaims,
+		StartAt:     time.Now().UTC(),
 	}, 30*time.Second)
 	if err != nil {
 		l.logger.Error("failed to save swap token", "error", err)

@@ -23,10 +23,11 @@ type pkceAuthorizer struct {
 	ephemeral lti_ports.EphemeralStore
 	signer    lti_ports.Signer
 	logger    lti_ports.Logger
+	telemetry lti_ports.TelemetryPort
 }
 
-func New(store lti_ports.EphemeralStore, signer lti_ports.Signer, logger lti_ports.Logger) *pkceAuthorizer {
-	return &pkceAuthorizer{ephemeral: store, signer: signer, logger: logger}
+func New(store lti_ports.EphemeralStore, signer lti_ports.Signer, logger lti_ports.Logger, telemetry lti_ports.TelemetryPort) *pkceAuthorizer {
+	return &pkceAuthorizer{ephemeral: store, signer: signer, logger: logger, telemetry: telemetry}
 }
 
 func (p *pkceAuthorizer) HandleFallback(w http.ResponseWriter, r *http.Request, exchangeToken string) {
@@ -186,6 +187,14 @@ func (p *pkceAuthorizer) exchangeForToken(w http.ResponseWriter, r *http.Request
 	if os.Getenv("INSECURE_COOKIES") == "true" {
 		useSecureCookie = false
 	}
+	p.telemetry.EmitLaunch(lti_domain.LaunchEvent{
+		At:        time.Now().UTC(),
+		Method:    lti_domain.LaunchMethodPKCE,
+		Success:   true,
+		Platform:  exchangeInfo.Data.Claims.Platform.ProductFamilyCode,
+		UserAgent: exchangeInfo.Data.RequestorUA,
+		Duration:  time.Since(exchangeInfo.Data.StartAt),
+	})
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
 		Value:    signed,

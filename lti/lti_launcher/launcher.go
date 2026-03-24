@@ -94,3 +94,9 @@ func WithDeepLinking(deepLinkingService lti_ports.DeepLinking) LauncherOption {
 		return launcher1dot3.WithDeepLinking(deepLinkingService)
 	}}
 }
+
+func WithTelemetry(telemetry lti_ports.TelemetryPort) LauncherOption {
+	return LauncherOption{toInternal: func() launcher1dot3.LauncherOptions {
+		return launcher1dot3.WithTelemetry(telemetry)
+	}}
+}

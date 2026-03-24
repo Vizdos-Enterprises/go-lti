@@ -14,9 +14,10 @@ type State struct {
 }
 
 type SwapToken struct {
-	To          string `json:"to"`
-	RequestorUA string `json:"ua"`
-	Claims      LTIJWT `json:"jwt"`
+	To          string    `json:"to"`
+	RequestorUA string    `json:"ua"`
+	Claims      LTIJWT    `json:"jwt"`
+	StartAt     time.Time `json:"sa"`
 }
 
 type ExchangeToken struct {

@@ -22,6 +22,7 @@ import (
 	"github.com/vizdos-enterprises/go-lti/lti/lti_logger"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_ports"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_registry"
+	"github.com/vizdos-enterprises/go-lti/lti/lti_telemetry"
 )
 
 func main() {
@@ -54,6 +55,8 @@ func main() {
 		lti_deeplink.WithRedirectURL("/lti/app/deeplink"),
 	)
 
+	telemetry := lti_telemetry.NewAsyncTelemetry(10)
+
 	launcher := lti_launcher.NewLTI13Launcher(
 		lti_launcher.WithBaseURL(os.Getenv("BASE_URL")),
 		lti_launcher.WithRedirectURL("/lti/app"),
@@ -63,7 +66,15 @@ func main() {
 		lti_launcher.WithSigner(signVerifier),
 		lti_launcher.WithAudience([]string{"made with ❤️ by kenton"}),
 		lti_launcher.WithDeepLinking(deepLinking),
+		lti_launcher.WithTelemetry(telemetry),
 	)
+
+	go func() {
+		for event := range telemetry.Events() {
+			logger.Info("telemetry received", "evt", event)
+		}
+	}()
+
 	ltiInstance := lti_http.NewServer(
 		lti_http.WithLauncher(launcher),
 		lti_http.WithVerifier(signVerifier),
