@@ -229,7 +229,7 @@ func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
 		At:          time.Now().UTC(),
 		Method:      lti_domain.LaunchMethodDirect,
 		Success:     true,
-		Platform:    swapData.Claims.Platform.Name,
+		Platform:    swapData.Claims.Platform.ProductFamilyCode,
 		UserAgent:   swapData.RequestorUA,
 		UserID:      swapData.Claims.UserInfo.UserID,
 		Duration:    time.Since(swapData.StartAt),
