@@ -226,13 +226,14 @@ func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
 		useSecureCookie = false
 	}
 	l.telemetry.EmitLaunch(lti_domain.LaunchEvent{
-		At:        time.Now().UTC(),
-		Method:    lti_domain.LaunchMethodDirect,
-		Success:   true,
-		Platform:  swapData.Claims.Platform.Name,
-		UserAgent: swapData.RequestorUA,
-		UserID:    swapData.Claims.UserInfo.UserID,
-		Duration:  time.Since(swapData.StartAt),
+		At:          time.Now().UTC(),
+		Method:      lti_domain.LaunchMethodDirect,
+		Success:     true,
+		Platform:    swapData.Claims.Platform.Name,
+		UserAgent:   swapData.RequestorUA,
+		UserID:      swapData.Claims.UserInfo.UserID,
+		Duration:    time.Since(swapData.StartAt),
+		Impostering: swapData.Claims.Impostering,
 	})
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,

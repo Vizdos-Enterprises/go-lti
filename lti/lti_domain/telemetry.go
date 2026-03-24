@@ -22,12 +22,13 @@ func (m LaunchMethod) String() string {
 }
 
 type LaunchEvent struct {
-	At        time.Time
-	Method    LaunchMethod
-	Success   bool
-	Platform  string
-	UserAgent string
-	UserID    string
+	At          time.Time
+	Method      LaunchMethod
+	Success     bool
+	Platform    string
+	UserAgent   string
+	UserID      string
+	Impostering bool
 
 	Duration time.Duration
 }

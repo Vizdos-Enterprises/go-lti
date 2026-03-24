@@ -188,13 +188,14 @@ func (p *pkceAuthorizer) exchangeForToken(w http.ResponseWriter, r *http.Request
 		useSecureCookie = false
 	}
 	p.telemetry.EmitLaunch(lti_domain.LaunchEvent{
-		At:        time.Now().UTC(),
-		Method:    lti_domain.LaunchMethodPKCE,
-		Success:   true,
-		Platform:  exchangeInfo.Data.Claims.Platform.ProductFamilyCode,
-		UserAgent: exchangeInfo.Data.RequestorUA,
-		Duration:  time.Since(exchangeInfo.Data.StartAt),
-		UserID:    exchangeInfo.Data.Claims.UserInfo.UserID,
+		At:          time.Now().UTC(),
+		Method:      lti_domain.LaunchMethodPKCE,
+		Success:     true,
+		Platform:    exchangeInfo.Data.Claims.Platform.ProductFamilyCode,
+		UserAgent:   exchangeInfo.Data.RequestorUA,
+		Duration:    time.Since(exchangeInfo.Data.StartAt),
+		UserID:      exchangeInfo.Data.Claims.UserInfo.UserID,
+		Impostering: exchangeInfo.Data.Claims.Impostering,
 	})
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,
