@@ -231,6 +231,7 @@ func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
 		Success:   true,
 		Platform:  swapData.Claims.Platform.Name,
 		UserAgent: swapData.RequestorUA,
+		UserID:    swapData.Claims.UserInfo.UserID,
 		Duration:  time.Since(swapData.StartAt),
 	})
 	cookie := &http.Cookie{

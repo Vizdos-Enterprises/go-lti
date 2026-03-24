@@ -194,6 +194,7 @@ func (p *pkceAuthorizer) exchangeForToken(w http.ResponseWriter, r *http.Request
 		Platform:  exchangeInfo.Data.Claims.Platform.ProductFamilyCode,
 		UserAgent: exchangeInfo.Data.RequestorUA,
 		Duration:  time.Since(exchangeInfo.Data.StartAt),
+		UserID:    exchangeInfo.Data.Claims.UserInfo.UserID,
 	})
 	cookie := &http.Cookie{
 		Name:     lti_domain.ContextKey_Session,

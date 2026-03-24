@@ -27,6 +27,7 @@ type LaunchEvent struct {
 	Success   bool
 	Platform  string
 	UserAgent string
+	UserID    string
 
 	Duration time.Duration
 }
