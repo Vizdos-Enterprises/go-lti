@@ -139,65 +139,112 @@
     <body class="min-h-screen text-slate-900">
         <div
             x-data="{
-                opening: false,
-                burned: false,
-                authFailed: false,
-                authPassed: false,
-                passedUrl: '',
-                errorCode: '',
-                traceId: '',
-                isExpiredError() {
-                    return this.errorCode === 'invalid token' || this.errorCode === 'missing token';
-                },
-                failedEyebrow() {
-                    return this.isExpiredError()
-                        ? 'Security Check Expired'
-                        : 'Security Check Failed';
-                },
-                failedTitle() {
-                    return this.isExpiredError()
-                        ? 'Please Refresh your Browser'
-                        : 'We couldn’t secure your browser.';
-                },
-                failedMessage() {
-                    return this.isExpiredError()
-                        ? 'This security check has expired. Please refresh this page and try again.'
-                        : 'Please refresh this page and try again. If this issue continues, please share a screenshot of this page with support.';
-                }
-            }"
-            x-init="
-                window.addEventListener('message', (e) => {
-                    if (e.origin !== window.location.origin) return;
+            opening: false,
+            burned: false,
+            authFailed: false,
+            authPassed: false,
+            timedOut: false,
+            passedUrl: '',
+            errorCode: '',
+            traceId: '',
+            burnTimeoutHandle: null,
 
-                    if (e.data?.type === 'exchange_burned') {
-                        burned = true;
-                        opening = false;
-                        return;
-                    }
+            startBurnTimeout() {
+                this.clearBurnTimeout();
+                this.timedOut = false;
+                console.log('Burn start 2')
 
-                    if (e.data?.type === 'auth_pass') {
-                        authPassed = true;
-                        opening = false;
-                        burned = false;
-                        passedUrl = e.data.to_url || '';
-                        return;
-                    }
-
-                    if (e.data?.type === 'auth_failure') {
-                        authFailed = true;
-                        authPassed = false;
-                        opening = false;
-                        burned = false;
-
-                        errorCode = e.data.err || 'Please reload and try again.';
-                        traceId = e.data.trace || 'Do not refresh the new tab that opened.';
-
-                        if (popupTab && !popupTab.closed && e.data.dontClose !== true) {
+                this.burnTimeoutHandle = setTimeout(() => {
+                    if (!this.authPassed && !this.authFailed) {
+                        this.timedOut = true;
+                        this.authFailed = true;
+                        this.opening = false;
+                        this.burned = false;
+                        this.errorCode = 'Confirmation Timeout';
+                        this.traceId = 'Refresh this page and try again.';
+                        if (popupTab && !popupTab.closed) {
                             popupTab.close();
                         }
                     }
-                });
-            "
+                }, 8000);
+            },
+
+            clearBurnTimeout() {
+                if (this.burnTimeoutHandle) {
+                    clearTimeout(this.burnTimeoutHandle);
+                    this.burnTimeoutHandle = null;
+                }
+            },
+
+            isExpiredError() {
+                return this.errorCode === 'invalid token' || this.errorCode === 'missing token';
+            },
+
+            failedEyebrow() {
+                if (this.timedOut) return 'Security Check Timed Out';
+                return this.isExpiredError()
+                    ? 'Security Check Expired'
+                    : 'Security Check Failed';
+            },
+
+            failedTitle() {
+                if (this.timedOut) return 'Confirmation took too long.';
+                return this.isExpiredError()
+                    ? 'Please Refresh your Browser'
+                    : 'We couldn’t secure your browser.';
+            },
+
+            failedMessage() {
+                if (this.timedOut) {
+                    return 'The secure tab took too long to respond. Please refresh this page and try again.';
+                }
+                return this.isExpiredError()
+                    ? 'This security check has expired. Please refresh this page and try again.'
+                    : 'Please refresh this page and try again. If this issue continues, please share a screenshot of this page with support.';
+            }
+        }"
+            x-init="
+            window.addEventListener('message', (e) => {
+                if (e.origin !== window.location.origin) return;
+
+                if (e.data?.type === 'exchange_burned') {
+                    burned = true;
+                    opening = false;
+                    authFailed = false;
+                    authPassed = false;
+                    timedOut = false;
+                    startBurnTimeout();
+                    return;
+                }
+
+                if (e.data?.type === 'auth_pass') {
+                    clearBurnTimeout();
+                    authPassed = true;
+                    authFailed = false;
+                    timedOut = false;
+                    opening = false;
+                    burned = false;
+                    passedUrl = e.data.to_url || '';
+                    return;
+                }
+
+                if (e.data?.type === 'auth_failure') {
+                    clearBurnTimeout();
+                    authFailed = true;
+                    authPassed = false;
+                    timedOut = false;
+                    opening = false;
+                    burned = false;
+
+                    errorCode = e.data.err || 'Please reload and try again.';
+                    traceId = e.data.trace || 'Do not refresh the new tab that opened.';
+
+                    if (popupTab && !popupTab.closed && e.data.dontClose !== true) {
+                        popupTab.close();
+                    }
+                }
+            });
+        "
             class="flex min-h-screen items-center justify-center px-6 py-12"
         >
             <div class="w-full max-w-124">
@@ -366,7 +413,11 @@
                             class="rounded bg-rose-100 px-5 py-4 text-rose-950"
                         >
                             <p class="text-xs">Error Details</p>
-                            <p class="text-lg font-bold" x-text="errorCode"></p>
+                            <p
+                                class="text-lg font-bold"
+                                data-testid="error-code"
+                                x-text="errorCode"
+                            ></p>
                             <p class="text-xs" x-text="traceId"></p>
                         </div>
                     </div>
@@ -385,6 +436,7 @@
                                 if (opening || authFailed) return;
 
                                 opening = true;
+                                startBurnTimeout();
                                 openHumanPopup();
                             "
                             class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-600/20 transition duration-200 hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-70"

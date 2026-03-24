@@ -106,4 +106,53 @@ test.describe("3pc tests", () => {
       await ConfirmHeader(page, "title-verify-failed");
     });
   });
+
+  test("times out if popup is closed before confirmation", async ({
+    page,
+    context,
+  }, testInfo) => {
+    const platform = GetBaseURL(testInfo, "platform");
+
+    await page.goto(`${platform}/render`);
+
+    const frame = await getStartFrame(page);
+    await WaitForLTIInit(frame);
+
+    await ConfirmHeader(page, "title-verify");
+
+    const popupPromise = context.waitForEvent("page");
+
+    await context.route("**/lti/auth/exchange", async (route) => {
+      await new Promise((r) => setTimeout(r, 5000)); // 5s delay
+      await route.continue();
+    });
+
+    await page.frameLocator("iframe").getByTestId("btn-continue").click();
+
+    const popup = await popupPromise;
+    await popup.waitForLoadState();
+
+    await popup.close();
+
+    // Now wait for timeout UI (should be < 10s based on your 8s timer)
+    const start = Date.now();
+
+    await expect(
+      page.frameLocator("iframe").getByTestId("title-verify-failed"),
+    ).toBeVisible({ timeout: 10000 });
+
+    await expect(
+      page.frameLocator("iframe").getByTestId("title-verify-failed"),
+    ).toHaveText("Confirmation took too long.");
+
+    const duration = Date.now() - start;
+
+    // sanity: make sure it didn't take forever
+    expect(duration).toBeLessThan(10000);
+
+    // assert timeout-specific UI
+    await expect(
+      page.frameLocator("iframe").getByTestId("error-code"),
+    ).toHaveText("Confirmation Timeout");
+  });
 });
