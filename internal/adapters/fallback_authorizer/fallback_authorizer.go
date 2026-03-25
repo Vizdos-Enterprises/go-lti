@@ -58,6 +58,8 @@ func (p *pkceAuthorizer) Route() *http.ServeMux {
 
 	safelyIgnoredErrors := []string{
 		"missing token",
+		"invalid token",
+		"role",
 	}
 
 	pagesMux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
