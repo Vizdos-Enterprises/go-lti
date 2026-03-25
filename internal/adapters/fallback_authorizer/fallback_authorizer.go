@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"slices"
 	"time"
 
 	pages "github.com/vizdos-enterprises/go-lti/internal/adapters/fallback_authorizer/frontend"
@@ -55,8 +56,17 @@ func (p *pkceAuthorizer) Route() *http.ServeMux {
 		w.Write(pages.ExchangeHTML)
 	})
 
+	safelyIgnoredErrors := []string{
+		"missing token",
+	}
+
 	pagesMux.HandleFunc("/error", func(w http.ResponseWriter, r *http.Request) {
-		p.logger.Error("showing error page", "err", r.URL.Query().Get("err"))
+		err := r.URL.Query().Get("err")
+		if !slices.Contains(safelyIgnoredErrors, err) {
+			p.logger.Error("showing error page", "err", err)
+		} else {
+			p.logger.Warn("showing error page with a safely ignored error", "err", err)
+		}
 		w.Header().Add("Content-Type", "text/html")
 		w.Write(pages.ErrorHTML)
 	})
