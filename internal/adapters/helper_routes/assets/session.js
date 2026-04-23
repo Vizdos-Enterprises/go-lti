@@ -53,26 +53,31 @@
 		}
 
 		// Sentry
+		// Sentry
 		if (sentry) {
-			if (typeof sentry.configureScope === "function") {
-				sentry.configureScope((scope) => {
-					scope.clear();
+			const scope =
+				typeof sentry.getIsolationScope === "function"
+					? sentry.getIsolationScope()
+					: typeof sentry.getCurrentScope === "function"
+						? sentry.getCurrentScope()
+						: null;
 
-					scope.setUser({ id: t.u });
-					scope.setTag("tenant_id", t.t);
-					scope.setTag("platform", t.p);
-					scope.setTag("impostering", String(t.i));
+			if (scope) {
+				scope.clear();
 
-					if (t.c) scope.setTag("context_id", t.c);
-					if (t.r && t.r.length > 0) {
-						scope.setTag("roles", t.r.join(","));
-					}
-				});
+				scope.setUser({ id: t.u });
+				scope.setTag("tenant_id", t.t);
+				scope.setTag("platform", t.p);
+				scope.setTag("impostering", String(t.i));
+
+				if (t.c) scope.setTag("context_id", t.c);
+				if (t.r && t.r.length > 0) {
+					scope.setTag("roles", t.r.join(","));
+				}
 			} else {
 				if (typeof sentry.setUser === "function") {
 					sentry.setUser({ id: t.u });
 				}
-
 				if (typeof sentry.setTag === "function") {
 					sentry.setTag("tenant_id", t.t);
 					sentry.setTag("platform", t.p);
