@@ -29,6 +29,7 @@
 		console.log("Initializing telemetry..");
 
 		window.__LTI_SESSION__ = t;
+		window.__LTI_SESSION_INTEGRATIONS__ = [];
 
 		const ph = typeof window !== "undefined" ? window.posthog : undefined;
 		const sentry = typeof window !== "undefined" ? window.Sentry : undefined;
@@ -43,6 +44,7 @@
 				platform: t.p,
 				impostering: t.i,
 			});
+			window.__LTI_SESSION_INTEGRATIONS__.push("posthog");
 		}
 
 		// Sentry
@@ -83,6 +85,8 @@
 					}
 				}
 			}
+
+			window.__LTI_SESSION_INTEGRATIONS__.push("sentry");
 		}
 	}
 	/** @type {FrontendSessionContext} */
