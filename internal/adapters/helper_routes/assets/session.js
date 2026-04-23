@@ -34,10 +34,6 @@
 		const sentry = typeof window !== "undefined" ? window.Sentry : undefined;
 
 		// PostHog
-		if (ph && typeof ph.reset === "function") {
-			ph.reset();
-		}
-
 		if (ph && typeof ph.identify === "function") {
 			ph.identify(t.u, {
 				tenant_id: t.t,
@@ -48,7 +44,6 @@
 			});
 		}
 
-		// Sentry
 		// Sentry
 		if (sentry) {
 			const scope =
