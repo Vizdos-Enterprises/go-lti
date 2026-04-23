@@ -59,8 +59,6 @@
 						: null;
 
 			if (scope) {
-				scope.clear();
-
 				scope.setUser({ id: t.u });
 				scope.setTag("tenant_id", t.t);
 				scope.setTag("platform", t.p);
