@@ -63,7 +63,7 @@ func (s *sessionInitializerHTTP) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	frontend := sessionInitTemplateData{
-		UserId:         session.UserInfo.UserID,
+		UserId:         s.distinctIdGenerator(session),
 		TenantId:       session.TenantID,
 		RolesJSON:      template.HTML(rolesJSON),
 		ContextId:      contextId,
