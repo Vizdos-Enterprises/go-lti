@@ -39,11 +39,7 @@
 		}
 
 		if (ph && typeof ph.identify === "function") {
-			ph.identify(t.u);
-		}
-
-		if (ph && typeof ph.register === "function") {
-			ph.register({
+			ph.identify(t.u, {
 				tenant_id: t.t,
 				roles: t.r,
 				context_id: t.c,
