@@ -17,7 +17,7 @@ func WithProtectedRoutes(
 
 func RegisterSessionInfoJS(distinctIdGenerator func(*lti_domain.LTIJWT) string) lti_ports.ProtectedRoute {
 	return lti_ports.ProtectedRoute{
-		Path:                   "/lti/session-info.js",
+		Path:                   "/session-info.js",
 		Role:                   []lti_domain.Role{},
 		RequireDeepLinkContext: false,
 		Handler:                helper_routes.NewSessionInitializerHTTP(distinctIdGenerator),
