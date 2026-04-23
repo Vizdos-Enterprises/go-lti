@@ -31,6 +31,11 @@
 		window.__LTI_SESSION__ = t;
 		window.__LTI_SESSION_INTEGRATIONS__ = [];
 
+		if (t.i) {
+			console.warn("Telemetry disabled for impersonated sessions");
+			return;
+		}
+
 		const ph = typeof window !== "undefined" ? window.posthog : undefined;
 		const sentry = typeof window !== "undefined" ? window.Sentry : undefined;
 
