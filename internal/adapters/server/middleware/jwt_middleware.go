@@ -89,9 +89,17 @@ func VerifyLTI(verifier lti_ports.Verifier, expectedAudience []string, allowImpo
 			return
 		}
 
+		sessionID := claims.SessionID
+		if phSessionID := r.Header.Get("X-POSTHOG-SESSION-ID"); phSessionID != "" {
+			// If present, utilize the PostHog one more..
+			sessionID = phSessionID
+		}
+
 		// Attach to context
 		ctx = lti_domain.ContextWithLTI(ctx, claims)
 		ctx = context.WithValue(ctx, "rawJWT", cookie.Value)
+		ctx = context.WithValue(ctx, lti_domain.ContextKey_SessionID, sessionID)
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

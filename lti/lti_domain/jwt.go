@@ -20,6 +20,7 @@ type LTIJWT struct {
 	Impostering            bool                `json:"im"`
 	ImposteringSrc         string              `json:"ims,omitempty"`
 	ImposterLaunchRedirect string              `json:"ilr,omitempty"`
+	SessionID              string              `json:"si,omitempty"`
 	jwt.RegisteredClaims
 }
 

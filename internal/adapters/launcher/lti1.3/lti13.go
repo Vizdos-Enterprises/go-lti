@@ -214,6 +214,7 @@ func (l LTI13_Launcher) HandleCodeSwap(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	swapData.Claims.SessionID = rand.Text()
 	signed, err := l.signer.Sign(swapData.Claims, time.Hour)
 	if err != nil {
 		l.logger.Error("failed to sign internal jwt", "error", err)
