@@ -35,6 +35,7 @@
 
 		// PostHog
 		if (ph && typeof ph.identify === "function") {
+			console.debug("Configuring PostHog session");
 			ph.identify(t.u, {
 				tenant_id: t.t,
 				roles: t.r,
@@ -46,6 +47,8 @@
 
 		// Sentry
 		if (sentry) {
+			console.debug("Configuring Sentry session");
+
 			const scope =
 				typeof sentry.getIsolationScope === "function"
 					? sentry.getIsolationScope()
