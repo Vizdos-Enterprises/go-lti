@@ -1,4 +1,4 @@
-package lti_routes
+package helper_routes
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ import (
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/js"
+	helper_routes_assets "github.com/vizdos-enterprises/go-lti/internal/adapters/helper_routes/assets"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
-	lti_routes_assets "github.com/vizdos-enterprises/go-lti/lti/lti_routes/assets"
 )
 
 type sessionInitializerHTTP struct {
@@ -23,7 +23,7 @@ type sessionInitializerHTTP struct {
 }
 
 func NewSessionInitializerHTTP(distinctIdGenerator func(*lti_domain.LTIJWT) string) *sessionInitializerHTTP {
-	tpl := template.Must(template.New("session.js").Parse(string(lti_routes_assets.SessionInitJS)))
+	tpl := template.Must(template.New("session.js").Parse(string(helper_routes_assets.SessionInitJS)))
 
 	m := minify.New()
 	m.AddFunc("text/javascript", js.Minify)

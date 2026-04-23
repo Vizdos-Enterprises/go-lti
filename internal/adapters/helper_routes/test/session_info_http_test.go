@@ -1,4 +1,4 @@
-package lti_routes_test
+package helper_routes_test
 
 import (
 	"net/http"
@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/vizdos-enterprises/go-lti/internal/adapters/helper_routes"
 	"github.com/vizdos-enterprises/go-lti/lti/lti_domain"
-	"github.com/vizdos-enterprises/go-lti/lti/lti_routes"
 )
 
 func TestSessionInfoResponse(t *testing.T) {
-	shttp := lti_routes.NewSessionInitializerHTTP(func(l *lti_domain.LTIJWT) string {
+	shttp := helper_routes.NewSessionInitializerHTTP(func(l *lti_domain.LTIJWT) string {
 		return "demo-id"
 	})
 

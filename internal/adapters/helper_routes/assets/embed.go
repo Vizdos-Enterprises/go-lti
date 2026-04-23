@@ -1,4 +1,4 @@
-package lti_routes_assets
+package helper_routes_assets
 
 import (
 	_ "embed"
