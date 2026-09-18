@@ -12,7 +12,7 @@ import (
 
 func TestSessionInfoResponse(t *testing.T) {
 	shttp := helper_routes.NewSessionInitializerHTTP(func(l *lti_domain.LTIJWT) string {
-		return "demo-id"
+		return "demo-user-id"
 	})
 
 	ctx := lti_domain.ContextWithLTI(t.Context(), &lti_domain.LTIJWT{
