@@ -32,6 +32,13 @@ jobs:
       - name: Race test
         run: go test -race ./...
 
+  e2e:
+    name: Run e2e Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       # ---- NODE / PLAYWRIGHT (scoped to /e2e) ----
       - uses: actions/setup-node@v4
         with:
