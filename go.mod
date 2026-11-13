@@ -1,6 +1,6 @@
 module github.com/vizdos-enterprises/go-lti
 
-go 1.25.5
+go 1.27.4
 
 require (
 	github.com/MicahParks/keyfunc/v3 v3.6.2
